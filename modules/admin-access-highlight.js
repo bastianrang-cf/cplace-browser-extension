@@ -10,7 +10,7 @@ export default {
   name: 'Admin access highlight',
   description:
     'Show a red page border when the user is logged has cplace admin access.',
-  defaultEnabled: true,
+  defaultEnabled: false,
   apply() {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
