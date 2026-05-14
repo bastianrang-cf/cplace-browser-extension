@@ -73,8 +73,20 @@ export default defineContentScript({
     });
 
     browser.runtime.onMessage.addListener((msg) => {
-      if (!msg || msg.type !== 'cplace:moduleToggle') return;
-      applyModuleState(msg.id, !!msg.enabled);
+      if (!msg) return;
+      if (msg.type === 'cplace:moduleToggle') {
+        applyModuleState(msg.id, !!msg.enabled);
+        return;
+      }
+      if (msg.type === 'cplace:moduleAction') {
+        const mod = registry.byId(msg.moduleId);
+        if (!mod || !activeModules.has(msg.moduleId) || typeof mod.onAction !== 'function') return;
+        try {
+          mod.onAction(msg.actionId);
+        } catch (e) {
+          console.warn('[cplace] module action failed:', msg.moduleId, msg.actionId, e);
+        }
+      }
     });
 
     browser.storage.onChanged.addListener((changes, area) => {
