@@ -44,6 +44,8 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 
 That's it — WXT handles loading it in all contexts automatically.
 
+**README:** Whenever you add a new module or change an existing module's name, description, or default, update the **Modules** table in `README.md` to match.
+
 ### Page-world script injection (CSP-safe pattern)
 
 Content scripts run in an isolated world. If a module needs to access page-level globals (e.g. `_cplace_languages_`, `jQuery`), it must inject a script into the page's MAIN world. **Never use `script.textContent`** — that counts as inline script execution and is blocked by pages with a strict CSP.
