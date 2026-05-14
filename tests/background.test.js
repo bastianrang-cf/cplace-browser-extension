@@ -22,7 +22,7 @@ describe('background — onInstalled', () => {
 
     const stored = await fakeBrowser.storage.local.get('enabledModules');
     expect(stored.enabledModules).toMatchObject({
-      'admin-access-highlight': true,
+      'admin-access-highlight': false,
       'batch-jobs': false,
       'language-switcher': false,
     });

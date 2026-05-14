@@ -10,8 +10,8 @@ describe('admin-access-highlight module', () => {
     expect(mod.id).toBe('admin-access-highlight');
   });
 
-  it('is enabled by default', () => {
-    expect(mod.defaultEnabled).toBe(true);
+  it('is disabled by default', () => {
+    expect(mod.defaultEnabled).toBe(false);
   });
 
   describe('apply()', () => {

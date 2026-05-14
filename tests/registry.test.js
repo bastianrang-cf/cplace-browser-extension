@@ -39,7 +39,7 @@ describe('registry', () => {
 
     it('maps defaultEnabled truthiness correctly', () => {
       const map = registry.defaultEnabledMap();
-      expect(map['admin-access-highlight']).toBe(true);
+      expect(map['admin-access-highlight']).toBe(false);
     });
   });
 });
