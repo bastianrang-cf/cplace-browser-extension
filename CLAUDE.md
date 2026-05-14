@@ -6,47 +6,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Chrome/Edge Manifest V3 browser extension for cplace solutions. Core behavior: detects whether the current page contains an element with `id="cplace"` and swaps the toolbar icon between a colored "c" (detected) and greyscale (not detected). Optional behaviors are implemented as **modules** that the user can toggle on the Options page.
 
-Plain JS, no bundler, no framework. The only build step is rendering icon PNGs from `icons/source.svg` (and zipping the extension for release).
+Built with **WXT** (Vite-based extension framework). Plain JS, no TypeScript.
 
-## Build / Package
+## Build / Dev / Test
 
 ```bash
-npm install            # devDeps: sharp (icon rasterization), adm-zip (release bundle)
-npm run build:icons    # regenerate icons/color-*.png and icons/gray-*.png from source.svg
-npm run package        # build icons + emit dist/cplace-browser-extension-<version>.zip
+npm install            # devDeps: wxt, vitest, sharp, etc.
+npm run build:icons    # regenerate public/icons/ PNGs from icons/source.svg
+npm run dev            # dev build with HMR — load .output/chrome-mv3/ as unpacked extension
+npm run build          # production build to .output/chrome-mv3/
+npm run package        # build icons + wxt zip → .output/*.zip (used by release CI)
+npm test               # run vitest test suite
+npm run test:watch     # run vitest in watch mode
 ```
 
-Load unpacked at `chrome://extensions` (Developer mode), pointing to the repo root. PNG icons are committed so the extension is loadable without running `npm install` first.
+Load unpacked at `chrome://extensions` (Developer mode), pointing to `.output/chrome-mv3/`.
+
+WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `manifest.json`.
 
 ## Architecture
 
 ### Core vs modules
 
-- **Core** (always on, in `src/content.js` + `src/background.js`): detects `#cplace` (initial + debounced `MutationObserver`), messages the background, background calls `chrome.action.setIcon({ tabId, path })` with the per-tab color or grey icon set.
-- **Modules** (opt-in, in `src/modules/`): each module file pushes a descriptor onto `globalThis.__cplaceModules` with `{ id, name, description, defaultEnabled, apply(), revert() }`. The same file is loaded in three contexts via plain `<script>` / `importScripts` / manifest `content_scripts`:
-  - content script — `apply`/`revert` mutate the page DOM
-  - service worker — only `defaultEnabled` is read (registry seeds storage on install)
-  - options page — only `id`/`name`/`description`/`defaultEnabled` are read (rendering checkboxes)
-- `src/modules/registry.js` exposes `globalThis.__cplaceRegistry` with `all()`, `byId(id)`, `defaultEnabledMap()`. Registry must not touch `document` (it runs in the service worker too).
+- **Core** (always on): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set.
+- **Modules** (opt-in, in `modules/`): each module file exports a default descriptor `{ id, name, description, defaultEnabled, apply(), revert() }`. `modules/registry.js` imports all modules and exposes `{ all(), byId(id), defaultEnabledMap() }`.
 
 ### Module lifecycle
 
-1. On install, `background.js` seeds `chrome.storage.local.enabledModules` from `defaultEnabledMap()` (only fills gaps; existing keys are preserved).
+1. On install, `background.js` seeds `browser.storage.local.enabledModules` from `registry.defaultEnabledMap()` (only fills gaps; existing keys are preserved).
 2. Content script reads `enabledModules` on load and calls `apply()` for each enabled module. State (which modules are currently applied) is tracked in a per-tab `Set` so toggles are idempotent.
-3. Options page writes to `chrome.storage.local` and sends `{ type: 'cplace:moduleToggle', id, enabled }` to the background, which fans out via `chrome.tabs.sendMessage` to every tab. Content scripts also listen on `chrome.storage.onChanged` as a backstop.
+3. Options page writes to `browser.storage.local` and sends `{ type: 'cplace:moduleToggle', id, enabled }` to the background, which fans out via `browser.tabs.sendMessage` to every tab. Content scripts also listen on `browser.storage.onChanged` as a backstop.
 
 ### Adding a new module
 
-1. Create `src/modules/<id>.js` that pushes `{ id, name, description, defaultEnabled, apply, revert }` onto `globalThis.__cplaceModules`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
-2. Register the file in **three places** so it loads in every context:
-   - `manifest.json` → `content_scripts[0].js` (before `src/content.js`)
-   - `src/background.js` → `importScripts(...)`
-   - `src/options/options.html` → `<script src="...">` (before `options.js`)
+1. Create `modules/<id>.js` with a default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
+2. Import it in `modules/registry.js` and add it to the `modules` array.
+
+That's it — WXT handles loading it in all contexts automatically.
+
+## Testing
+
+Tests live in `tests/`. Run with `npm test` (uses Vitest + `@webext-core/fake-browser` via the `WxtVitest` plugin).
+
+- `tests/registry.test.js` — pure registry logic
+- `tests/admin-access-highlight.test.js` — module apply/revert DOM behavior
+- `tests/background.test.js` — onInstalled seeding, onMessage routing
+- `tests/content.test.js` — detection, module lifecycle, toggle handling
+
+CI runs `npm test` on every PR to `main` (`.github/workflows/ci.yml`).
 
 ## Release pipeline (release-please)
 
-- `release-please-config.json` + `.release-please-manifest.json` drive `release-type: simple`. The `extra-files` config bumps `manifest.json` `$.version` and `package.json` `$.version` so the published zip's manifest version matches the release tag.
+- `release-please-config.json` + `.release-please-manifest.json` drive `release-type: simple`. The `extra-files` config bumps `package.json` `$.version`; WXT reads the version from `package.json` automatically when generating the manifest.
 - `.github/workflows/release-please.yml`:
   - Job 1 (`release-please`) runs on pushes to `main`, opens/maintains the release PR; on merge it tags + creates a GitHub Release.
-  - Job 2 (`package`) runs when `release_created == 'true'`: `npm ci`, `npm run package`, then `gh release upload <tag> dist/*.zip`.
+  - Job 2 (`package`) runs when `release_created == 'true'`: `npm ci`, `npm run package`, then `gh release upload <tag> .output/*.zip`.
 - Commits must follow Conventional Commits for release-please to pick them up (`feat:`, `fix:`, `chore:`, etc.).
