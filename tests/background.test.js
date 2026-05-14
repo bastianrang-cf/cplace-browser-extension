@@ -10,6 +10,7 @@ async function loadBackground() {
 beforeEach(async () => {
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.action, 'setIcon').mockResolvedValue(undefined);
+  vi.spyOn(fakeBrowser.action, 'setPopup').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.tabs, 'sendMessage').mockResolvedValue(undefined);
   vi.resetModules();
 });
@@ -48,7 +49,7 @@ describe('background — onInstalled', () => {
 });
 
 describe('background — onMessage: cplace:status', () => {
-  it('sets color icon when found is true', async () => {
+  it('sets color icon and enables popup when found is true', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:status', found: true },
@@ -58,9 +59,10 @@ describe('background — onMessage: cplace:status', () => {
     expect(fakeBrowser.action.setIcon).toHaveBeenCalledWith(
       expect.objectContaining({ tabId: 42, path: expect.objectContaining({ 16: 'icons/color-16.png' }) }),
     );
+    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 42, popup: 'popup.html' });
   });
 
-  it('sets gray icon when found is false', async () => {
+  it('sets gray icon and disables popup when found is false', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:status', found: false },
@@ -70,9 +72,10 @@ describe('background — onMessage: cplace:status', () => {
     expect(fakeBrowser.action.setIcon).toHaveBeenCalledWith(
       expect.objectContaining({ tabId: 7, path: expect.objectContaining({ 16: 'icons/gray-16.png' }) }),
     );
+    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 7, popup: '' });
   });
 
-  it('does not call setIcon when sender has no tab', async () => {
+  it('does not call setIcon or setPopup when sender has no tab', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:status', found: true },
@@ -80,6 +83,7 @@ describe('background — onMessage: cplace:status', () => {
     );
 
     expect(fakeBrowser.action.setIcon).not.toHaveBeenCalled();
+    expect(fakeBrowser.action.setPopup).not.toHaveBeenCalled();
   });
 
   it('does nothing for a null message', async () => {

@@ -35,10 +35,9 @@ export default defineBackground(() => {
     if (!msg) return;
 
     if (msg.type === 'cplace:status' && sender.tab && sender.tab.id != null) {
-      browser.action.setIcon({
-        tabId: sender.tab.id,
-        path: msg.found ? COLOR_ICON : GRAY_ICON,
-      });
+      const tabId = sender.tab.id;
+      browser.action.setIcon({ tabId, path: msg.found ? COLOR_ICON : GRAY_ICON });
+      browser.action.setPopup({ tabId, popup: msg.found ? 'popup.html' : '' });
       return;
     }
 
