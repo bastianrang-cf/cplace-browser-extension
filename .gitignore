@@ -5,3 +5,4 @@ dist/
 .wxt/
 .output/
 public/icons/
+key.pem
