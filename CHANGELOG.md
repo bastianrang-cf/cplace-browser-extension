@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.3.0...v0.4.0) (2026-05-14)
+
+
+### Features
+
+* add Firefox and Safari builds to release pipeline ([de6b58c](https://github.com/bastianrang-cf/cplace-browser-extension/commit/de6b58c201e4f7af594d008bfb3696eb904ccdc5))
+* add Firefox and Safari builds to the package script ([25474e2](https://github.com/bastianrang-cf/cplace-browser-extension/commit/25474e2fa25b21dccaeb3cd44fca246396ac1e18))
+* disable popup on tabs where cplace is not detected ([2e12088](https://github.com/bastianrang-cf/cplace-browser-extension/commit/2e120887ca67ecea3a7b5d27025e8d3098ee7b52))
+
+
+### Bug Fixes
+
+* replace inline script with external file to fix CSP violation ([fcbc8c2](https://github.com/bastianrang-cf/cplace-browser-extension/commit/fcbc8c261bdd63b4f232cfbcd2345e342d078911))
+* replace inline script with external file to fix CSP violation ([#14](https://github.com/bastianrang-cf/cplace-browser-extension/issues/14)) ([61109bc](https://github.com/bastianrang-cf/cplace-browser-extension/commit/61109bcb08e0eb4a0906a25e93ab67f609aa7549))
+
 ## [0.3.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.2.0...v0.3.0) (2026-05-14)
 
 
