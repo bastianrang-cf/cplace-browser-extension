@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.4.0...v0.5.0) (2026-05-14)
+
+
+### Features
+
+* add Batch Jobs overlay module ([#11](https://github.com/bastianrang-cf/cplace-browser-extension/issues/11)) ([#18](https://github.com/bastianrang-cf/cplace-browser-extension/issues/18)) ([b5bab44](https://github.com/bastianrang-cf/cplace-browser-extension/commit/b5bab447893ed1312a40dfe554f669f6f8e3cdb7))
+
+
+### Bug Fixes
+
+* admin access highlight should not be enabled by default ([3e5f76a](https://github.com/bastianrang-cf/cplace-browser-extension/commit/3e5f76a2b8c71262ad593bdfac80ee38e25ee4a9))
+* stable extension ID across builds ([#19](https://github.com/bastianrang-cf/cplace-browser-extension/issues/19)) ([170b22f](https://github.com/bastianrang-cf/cplace-browser-extension/commit/170b22f1dac7822d1dcf86250f316c9211c62ffd))
+
 ## [0.4.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.3.0...v0.4.0) (2026-05-14)
 
 
