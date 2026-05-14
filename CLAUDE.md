@@ -44,6 +44,17 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 
 That's it — WXT handles loading it in all contexts automatically.
 
+### Page-world script injection (CSP-safe pattern)
+
+Content scripts run in an isolated world. If a module needs to access page-level globals (e.g. `_cplace_languages_`, `jQuery`), it must inject a script into the page's MAIN world. **Never use `script.textContent`** — that counts as inline script execution and is blocked by pages with a strict CSP.
+
+Instead:
+1. Place the page-world logic in `public/<id>-page.js` (WXT copies `public/` into the extension root verbatim).
+2. Declare the file in `wxt.config.js` under `manifest.web_accessible_resources` so pages can load it.
+3. In `apply()`, inject via `script.src = browser.runtime.getURL('<id>-page.js')`.
+
+Extension-origin scripts loaded via `src` are always CSP-safe — no `unsafe-inline` required.
+
 ## Testing
 
 Tests live in `tests/`. Run with `npm test` (uses Vitest + `@webext-core/fake-browser` via the `WxtVitest` plugin).

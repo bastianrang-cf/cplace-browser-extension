@@ -34,10 +34,10 @@ describe('language-switcher module', () => {
       expect(document.head.contains(script)).toBe(true);
     });
 
-    it('script content contains the trigger event name', () => {
+    it('script src points to the language switcher page script', () => {
       mod.apply();
       const script = document.getElementById('cplace-language-switcher-script');
-      expect(script.textContent).toContain('cplace:doSwitchLanguage');
+      expect(script.src).toContain('language-switcher-page.js');
     });
 
     it('is idempotent — calling twice creates only one script element', () => {
