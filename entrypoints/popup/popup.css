@@ -1,0 +1,40 @@
+:root {
+  color-scheme: light dark;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 8px;
+  background: Canvas;
+  color: CanvasText;
+  min-width: 180px;
+}
+
+#actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+button {
+  width: 100%;
+  padding: 8px 12px;
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+  color: CanvasText;
+  border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+button:hover {
+  background: color-mix(in srgb, CanvasText 14%, transparent);
+}
+
+#no-actions {
+  margin: 4px 0;
+  font-size: 13px;
+  opacity: 0.65;
+}

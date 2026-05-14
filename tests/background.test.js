@@ -20,7 +20,10 @@ describe('background — onInstalled', () => {
     await fakeBrowser.runtime.onInstalled.trigger({ reason: 'install' });
 
     const stored = await fakeBrowser.storage.local.get('enabledModules');
-    expect(stored.enabledModules).toMatchObject({ 'admin-access-highlight': true });
+    expect(stored.enabledModules).toMatchObject({
+      'admin-access-highlight': true,
+      'language-switcher': false,
+    });
   });
 
   it('does not overwrite keys that already exist in storage', async () => {
@@ -33,7 +36,9 @@ describe('background — onInstalled', () => {
   });
 
   it('does not call storage.set when all keys already exist', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': true } });
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'admin-access-highlight': true, 'language-switcher': false },
+    });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');
     await loadBackground();
     await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });

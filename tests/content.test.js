@@ -141,6 +141,53 @@ describe('content — cplace:moduleToggle listener', () => {
   });
 });
 
+describe('content — cplace:moduleAction listener', () => {
+  it('calls onAction when the module is active and message is received', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'admin-access-highlight': true, 'language-switcher': true },
+    });
+    await loadContent();
+
+    const spy = vi.spyOn(document, 'dispatchEvent');
+    await fakeBrowser.runtime.onMessage.trigger({
+      type: 'cplace:moduleAction',
+      moduleId: 'language-switcher',
+      actionId: 'switch-language',
+    });
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:doSwitchLanguage' }),
+    );
+  });
+
+  it('does nothing when the module is not active', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'admin-access-highlight': false, 'language-switcher': false },
+    });
+    await loadContent();
+
+    const spy = vi.spyOn(document, 'dispatchEvent');
+    await fakeBrowser.runtime.onMessage.trigger({
+      type: 'cplace:moduleAction',
+      moduleId: 'language-switcher',
+      actionId: 'switch-language',
+    });
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('does nothing for an unknown moduleId', async () => {
+    await loadContent();
+    await expect(
+      fakeBrowser.runtime.onMessage.trigger({
+        type: 'cplace:moduleAction',
+        moduleId: 'nonexistent-module',
+        actionId: 'do-something',
+      }),
+    ).resolves.not.toThrow();
+  });
+});
+
 describe('content — storage.onChanged backstop', () => {
   it('applies modules when enabledModules changes in local storage', async () => {
     await loadContent();

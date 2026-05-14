@@ -1,6 +1,7 @@
 import adminAccessHighlight from './admin-access-highlight.js';
+import languageSwitcher from './language-switcher.js';
 
-const modules = [adminAccessHighlight];
+const modules = [adminAccessHighlight, languageSwitcher];
 
 export const registry = {
   all() {
