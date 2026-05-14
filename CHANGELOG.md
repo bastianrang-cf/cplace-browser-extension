@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.5.0...v0.6.0) (2026-05-14)
+
+
+### Features
+
+* detect cplace version and show in tooltip and icon badge ([#23](https://github.com/bastianrang-cf/cplace-browser-extension/issues/23)) ([38beef8](https://github.com/bastianrang-cf/cplace-browser-extension/commit/38beef8f37b20b52cb80496e013cd6e31fa72fec))
+
 ## [0.5.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.4.0...v0.5.0) (2026-05-14)
 
 
