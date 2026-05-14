@@ -9,11 +9,6 @@
       "extra-files": [
         {
           "type": "json",
-          "path": "manifest.json",
-          "jsonpath": "$.version"
-        },
-        {
-          "type": "json",
           "path": "package.json",
           "jsonpath": "$.version"
         }

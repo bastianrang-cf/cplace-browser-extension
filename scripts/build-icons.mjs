@@ -6,8 +6,8 @@ import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const ICONS_DIR = resolve(ROOT, 'icons');
-const SOURCE = resolve(ICONS_DIR, 'source.svg');
+const ICONS_DIR = resolve(ROOT, 'public', 'icons');
+const SOURCE = resolve(ROOT, 'icons', 'source.svg');
 const SIZES = [16, 32, 48, 128];
 
 const svg = await readFile(SOURCE);
