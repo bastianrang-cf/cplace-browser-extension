@@ -9,7 +9,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "build:icons": "node scripts/build-icons.mjs",
-    "package": "npm run build:icons && wxt zip",
+    "package": "npm run build:icons && wxt zip && wxt zip -b firefox && wxt zip -b safari",
     "test": "vitest run",
     "test:watch": "vitest"
   },
