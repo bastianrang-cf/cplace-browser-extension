@@ -24,6 +24,7 @@ export default defineConfig({
     web_accessible_resources: [
       { resources: ['language-switcher-page.js'], matches: ['<all_urls>'] },
       { resources: ['batch-jobs-page.js'], matches: ['<all_urls>'] },
+      { resources: ['detect-version-page.js'], matches: ['<all_urls>'] },
     ],
   },
 });

@@ -34,10 +34,30 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((msg, sender) => {
     if (!msg) return;
 
+    if (msg.type === 'cplace:version' && sender.tab && sender.tab.id != null) {
+      const tabId = sender.tab.id;
+      let title = 'cplace';
+      if (msg.version) title += ' ' + msg.version;
+      if (msg.hostname) {
+        title += ' on ' + msg.hostname;
+        if (msg.tenant) title += '/' + msg.tenant;
+      }
+      browser.action.setTitle({ tabId, title });
+      browser.action.setBadgeText({ tabId, text: msg.version || '' });
+      if (msg.version) {
+        browser.action.setBadgeBackgroundColor({ tabId, color: '#2563eb' });
+      }
+      return;
+    }
+
     if (msg.type === 'cplace:status' && sender.tab && sender.tab.id != null) {
       const tabId = sender.tab.id;
       browser.action.setIcon({ tabId, path: msg.found ? COLOR_ICON : GRAY_ICON });
       browser.action.setPopup({ tabId, popup: msg.found ? 'popup.html' : '' });
+      if (!msg.found) {
+        browser.action.setTitle({ tabId, title: 'cplace' });
+        browser.action.setBadgeText({ tabId, text: '' });
+      }
       return;
     }
 

@@ -15,6 +15,7 @@ beforeEach(async () => {
   vi.useRealTimers();
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
+  vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p}`);
   vi.resetModules();
   document.documentElement.innerHTML = '<head></head><body></body>';
 });
@@ -185,6 +186,51 @@ describe('content — cplace:moduleAction listener', () => {
         actionId: 'do-something',
       }),
     ).resolves.not.toThrow();
+  });
+});
+
+describe('content — version detection', () => {
+  it('injects detect-version-page.js when #cplace is present at load', async () => {
+    document.body.innerHTML = '<div id="cplace"></div>';
+    await loadContent();
+
+    const script = document.querySelector('script[src="chrome-extension://test/detect-version-page.js"]');
+    expect(script).not.toBeNull();
+  });
+
+  it('does not inject detect-version-page.js when #cplace is absent', async () => {
+    await loadContent();
+
+    const script = document.querySelector('script[src="chrome-extension://test/detect-version-page.js"]');
+    expect(script).toBeNull();
+  });
+
+  it('sends cplace:version with version when versionDetected fires', async () => {
+    document.body.innerHTML = '<div id="cplace"></div>';
+    await loadContent();
+    vi.clearAllMocks();
+
+    document.dispatchEvent(new CustomEvent('cplace:versionDetected', {
+      detail: { version: '25.4' },
+    }));
+
+    expect(fakeBrowser.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:version', version: '25.4' }),
+    );
+  });
+
+  it('sends version:null when versionDetected fires with no version', async () => {
+    document.body.innerHTML = '<div id="cplace"></div>';
+    await loadContent();
+    vi.clearAllMocks();
+
+    document.dispatchEvent(new CustomEvent('cplace:versionDetected', {
+      detail: {},
+    }));
+
+    expect(fakeBrowser.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:version', version: null }),
+    );
   });
 });
 

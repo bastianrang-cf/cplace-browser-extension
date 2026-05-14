@@ -45,6 +45,15 @@ export default defineContentScript({
     // --- Core detection ---
 
     let lastFound = null;
+    let versionInjected = false;
+
+    document.addEventListener('cplace:versionDetected', (event) => {
+      const version = event.detail?.version || null;
+      const tenant = location.pathname.split('/').filter(Boolean)[0] || null;
+      try {
+        browser.runtime.sendMessage({ type: 'cplace:version', version, hostname: location.hostname, tenant });
+      } catch (_) {}
+    });
 
     function checkCplace() {
       const found = !!document.getElementById('cplace');
@@ -54,6 +63,12 @@ export default defineContentScript({
         browser.runtime.sendMessage({ type: 'cplace:status', found });
       } catch (_) {
         // service worker may be asleep; safe to ignore — next check will retry
+      }
+      if (found && !versionInjected) {
+        versionInjected = true;
+        const s = document.createElement('script');
+        s.src = browser.runtime.getURL('detect-version-page.js');
+        (document.head || document.documentElement).appendChild(s);
       }
     }
 
