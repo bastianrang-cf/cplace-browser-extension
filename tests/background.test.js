@@ -11,6 +11,9 @@ beforeEach(async () => {
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.action, 'setIcon').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.action, 'setPopup').mockResolvedValue(undefined);
+  vi.spyOn(fakeBrowser.action, 'setTitle').mockResolvedValue(undefined);
+  vi.spyOn(fakeBrowser.action, 'setBadgeText').mockResolvedValue(undefined);
+  vi.spyOn(fakeBrowser.action, 'setBadgeBackgroundColor').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.tabs, 'sendMessage').mockResolvedValue(undefined);
   vi.resetModules();
 });
@@ -76,6 +79,28 @@ describe('background — onMessage: cplace:status', () => {
     expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 7, popup: '' });
   });
 
+  it('resets title and badge when found is false', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:status', found: false },
+      { tab: { id: 7 } },
+    );
+
+    expect(fakeBrowser.action.setTitle).toHaveBeenCalledWith({ tabId: 7, title: 'cplace' });
+    expect(fakeBrowser.action.setBadgeText).toHaveBeenCalledWith({ tabId: 7, text: '' });
+  });
+
+  it('does not set title or badge when found is true', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:status', found: true },
+      { tab: { id: 7 } },
+    );
+
+    expect(fakeBrowser.action.setTitle).not.toHaveBeenCalled();
+    expect(fakeBrowser.action.setBadgeText).not.toHaveBeenCalled();
+  });
+
   it('does not call setIcon or setPopup when sender has no tab', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
@@ -92,6 +117,62 @@ describe('background — onMessage: cplace:status', () => {
     await fakeBrowser.runtime.onMessage.trigger(null, {});
 
     expect(fakeBrowser.action.setIcon).not.toHaveBeenCalled();
+  });
+});
+
+describe('background — onMessage: cplace:version', () => {
+  it('sets full title and badge when version and tenant are present', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: 'mytenant' },
+      { tab: { id: 42 } },
+    );
+
+    expect(fakeBrowser.action.setTitle).toHaveBeenCalledWith({
+      tabId: 42,
+      title: 'cplace 25.4 on example.com/mytenant',
+    });
+    expect(fakeBrowser.action.setBadgeText).toHaveBeenCalledWith({ tabId: 42, text: '25.4' });
+    expect(fakeBrowser.action.setBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 42, color: '#2563eb' });
+  });
+
+  it('omits version segment and clears badge when version is null', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: null, hostname: 'example.com', tenant: 'mytenant' },
+      { tab: { id: 5 } },
+    );
+
+    expect(fakeBrowser.action.setTitle).toHaveBeenCalledWith({
+      tabId: 5,
+      title: 'cplace on example.com/mytenant',
+    });
+    expect(fakeBrowser.action.setBadgeText).toHaveBeenCalledWith({ tabId: 5, text: '' });
+    expect(fakeBrowser.action.setBadgeBackgroundColor).not.toHaveBeenCalled();
+  });
+
+  it('omits tenant segment when tenant is null', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: null },
+      { tab: { id: 3 } },
+    );
+
+    expect(fakeBrowser.action.setTitle).toHaveBeenCalledWith({
+      tabId: 3,
+      title: 'cplace 25.4 on example.com',
+    });
+  });
+
+  it('does not call setTitle or setBadgeText when sender has no tab', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: null },
+      {},
+    );
+
+    expect(fakeBrowser.action.setTitle).not.toHaveBeenCalled();
+    expect(fakeBrowser.action.setBadgeText).not.toHaveBeenCalled();
   });
 });
 
