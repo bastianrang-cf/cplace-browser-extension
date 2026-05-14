@@ -1,7 +1,8 @@
 import adminAccessHighlight from './admin-access-highlight.js';
+import batchJobs from './batch-jobs.js';
 import languageSwitcher from './language-switcher.js';
 
-const modules = [adminAccessHighlight, languageSwitcher];
+const modules = [adminAccessHighlight, batchJobs, languageSwitcher];
 
 export const registry = {
   all() {
