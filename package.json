@@ -1,0 +1,17 @@
+{
+  "name": "cplace-browser-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome/Edge extension that detects cplace pages and exposes optional modules.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build:icons": "node scripts/build-icons.mjs",
+    "build": "npm run build:icons",
+    "package": "npm run build && node scripts/zip.mjs"
+  },
+  "devDependencies": {
+    "adm-zip": "^0.5.16",
+    "sharp": "^0.33.5"
+  }
+}
