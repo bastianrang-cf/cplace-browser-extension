@@ -8,10 +8,19 @@ export default defineContentScript({
   runAt: 'document_idle',
   main() {
     const activeModules = new Set();
+    let lastVersionInfo = null;
 
     function getEnabledMap(stored) {
       const defaults = registry.defaultEnabledMap();
       return { ...defaults, ...(stored || {}) };
+    }
+
+    function notifyVersionDetected(mod) {
+      if (lastVersionInfo && typeof mod.onVersionDetected === 'function') {
+        try { mod.onVersionDetected(lastVersionInfo); } catch (e) {
+          console.warn('[cplace] module onVersionDetected failed:', mod.id, e);
+        }
+      }
     }
 
     function applyModuleState(id, enabled) {
@@ -25,6 +34,7 @@ export default defineContentScript({
         } catch (e) {
           console.warn('[cplace] module apply failed:', id, e);
         }
+        notifyVersionDetected(mod);
       } else if (!enabled && isActive) {
         try {
           mod.revert();
@@ -50,9 +60,14 @@ export default defineContentScript({
     document.addEventListener('cplace:versionDetected', (event) => {
       const version = event.detail?.version || null;
       const tenant = location.pathname.split('/').filter(Boolean)[0] || null;
-      try {
-        browser.runtime.sendMessage({ type: 'cplace:version', version, hostname: location.hostname, tenant });
-      } catch (_) {}
+      lastVersionInfo = { version, hostname: location.hostname, tenant };
+      for (const mod of registry.all()) {
+        if (activeModules.has(mod.id) && typeof mod.onVersionDetected === 'function') {
+          try { mod.onVersionDetected(lastVersionInfo); } catch (e) {
+            console.warn('[cplace] module onVersionDetected failed:', mod.id, e);
+          }
+        }
+      }
     });
 
     function checkCplace() {

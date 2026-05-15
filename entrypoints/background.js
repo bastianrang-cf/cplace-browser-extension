@@ -17,8 +17,6 @@ const GRAY_ICON = {
 };
 
 export default defineBackground(() => {
-  const tabVersions = new Map();
-
   browser.runtime.onInstalled.addListener(async () => {
     const defaults = registry.defaultEnabledMap();
     const stored = await browser.storage.local.get(STORAGE_KEY);
@@ -36,54 +34,33 @@ export default defineBackground(() => {
   browser.runtime.onMessage.addListener((msg, sender) => {
     if (!msg) return;
 
-    if (msg.type === 'cplace:version' && sender.tab && sender.tab.id != null) {
-      const tabId = sender.tab.id;
-      tabVersions.set(tabId, { version: msg.version, hostname: msg.hostname, tenant: msg.tenant });
-      let title = 'cplace';
-      if (msg.version) title += ' ' + msg.version;
-      if (msg.hostname) {
-        title += ' on ' + msg.hostname;
-        if (msg.tenant) title += '/' + msg.tenant;
-      }
-      browser.action.setTitle({ tabId, title });
-      browser.storage.local.get(STORAGE_KEY).then((stored) => {
-        const enabledModules = stored[STORAGE_KEY] || {};
-        const showBadge = enabledModules['version-badge'] !== false;
-        if (showBadge) {
-          browser.action.setBadgeText({ tabId, text: msg.version || '' });
-          if (msg.version) {
-            browser.action.setBadgeBackgroundColor({ tabId, color: '#2563eb' });
-          }
-        }
-      });
-      return;
-    }
-
     if (msg.type === 'cplace:status' && sender.tab && sender.tab.id != null) {
       const tabId = sender.tab.id;
       browser.action.setIcon({ tabId, path: msg.found ? COLOR_ICON : GRAY_ICON });
       browser.action.setPopup({ tabId, popup: msg.found ? 'popup.html' : '' });
       if (!msg.found) {
-        tabVersions.delete(tabId);
         browser.action.setTitle({ tabId, title: 'cplace' });
         browser.action.setBadgeText({ tabId, text: '' });
       }
       return;
     }
 
+    if (msg.type === 'cplace:setBadge' && sender.tab && sender.tab.id != null) {
+      const tabId = sender.tab.id;
+      browser.action.setBadgeText({ tabId, text: msg.text || '' });
+      if (msg.color && msg.text) browser.action.setBadgeBackgroundColor({ tabId, color: msg.color });
+      if (msg.title) browser.action.setTitle({ tabId, title: msg.title });
+      return;
+    }
+
+    if (msg.type === 'cplace:clearBadge' && sender.tab && sender.tab.id != null) {
+      const tabId = sender.tab.id;
+      browser.action.setBadgeText({ tabId, text: '' });
+      browser.action.setTitle({ tabId, title: 'cplace' });
+      return;
+    }
+
     if (msg.type === 'cplace:moduleToggle') {
-      if (msg.id === 'version-badge') {
-        for (const [tabId, info] of tabVersions) {
-          if (msg.enabled) {
-            browser.action.setBadgeText({ tabId, text: info.version || '' });
-            if (info.version) {
-              browser.action.setBadgeBackgroundColor({ tabId, color: '#2563eb' });
-            }
-          } else {
-            browser.action.setBadgeText({ tabId, text: '' });
-          }
-        }
-      }
       browser.tabs.query({}).then((tabs) => {
         for (const tab of tabs) {
           if (tab.id == null) continue;
