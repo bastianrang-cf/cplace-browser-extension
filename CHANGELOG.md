@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.8.0...v0.9.0) (2026-05-15)
+
+
+### Features
+
+* add System Information module ([#33](https://github.com/bastianrang-cf/cplace-browser-extension/issues/33)) ([9c7b333](https://github.com/bastianrang-cf/cplace-browser-extension/commit/9c7b3337cae31d71d057acc21c12800f6dffc4c7))
+
+
+### Bug Fixes
+
+* **batch-jobs:** correct request shape and rewrite row parsing ([#32](https://github.com/bastianrang-cf/cplace-browser-extension/issues/32)) ([660a94b](https://github.com/bastianrang-cf/cplace-browser-extension/commit/660a94b3b0dca510925ba765713d2b659e4221a5))
+
 ## [0.8.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.7.0...v0.8.0) (2026-05-15)
 
 
