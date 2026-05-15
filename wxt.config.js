@@ -5,9 +5,9 @@ import { readdirSync, copyFileSync, existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function copyModulePageScripts() {
+function copyModuleAssets() {
   return {
-    name: 'copy-module-page-scripts',
+    name: 'copy-module-assets',
     writeBundle(options) {
       const outDir = options.dir;
       if (!outDir) return;
@@ -17,6 +17,10 @@ function copyModulePageScripts() {
         if (existsSync(pageScript)) {
           copyFileSync(pageScript, join(outDir, `${entry}-page.js`));
         }
+        const moduleCss = join(modulesDir, entry, 'module.css');
+        if (existsSync(moduleCss)) {
+          copyFileSync(moduleCss, join(outDir, `${entry}-module.css`));
+        }
       }
     },
   };
@@ -25,7 +29,7 @@ function copyModulePageScripts() {
 export default defineConfig({
   modulesDir: '.wxt/user-modules',
   vite: () => ({
-    plugins: [copyModulePageScripts()],
+    plugins: [copyModuleAssets()],
   }),
   manifest: {
     name: 'cplace browser extension',
@@ -48,7 +52,7 @@ export default defineConfig({
       },
     },
     web_accessible_resources: [
-      { resources: ['*-page.js'], matches: ['<all_urls>'] },
+      { resources: ['*-page.js', '*-module.css'], matches: ['<all_urls>'] },
     ],
   },
 });
