@@ -17,6 +17,25 @@ async function loadMod() {
   return mod;
 }
 
+function rowHtml({ name, href, startedAt, state, duration }) {
+  return `
+    <tr>
+      <td cplace-control='${JSON.stringify({ name: 'name', value: name })}'>
+        <a class="assetLink" href="${href}">${name}</a>
+      </td>
+      <td cplace-control='${JSON.stringify({ name: 'createdAt' })}'></td>
+      <td cplace-control='${JSON.stringify({ name: 'createdBy' })}'></td>
+      <td cplace-control='${JSON.stringify({ name: 'startedAt' })}'>
+        ${startedAt != null ? `<cplace-timestamp timestamp="${startedAt}"></cplace-timestamp>` : ''}
+      </td>
+      <td cplace-control='${JSON.stringify({ name: 'state', value: state })}'>
+        <span data-status="${state}">${state}</span>
+      </td>
+      <td cplace-control='${JSON.stringify({ name: 'duration', value: String(duration) })}'></td>
+    </tr>
+  `;
+}
+
 describe('batch-jobs module', () => {
   it('has correct id', async () => {
     const mod = await loadMod();
@@ -59,7 +78,13 @@ describe('batch-jobs module', () => {
         detail: {
           rows: [{
             id: 'persistentJob_abc123',
-            html: `<tr><td cplace-control='{"name":"Test Job","startedAt":${Date.now() - 5000}}'></td></tr>`,
+            html: rowHtml({
+              name: 'Test Job',
+              href: '/training/batchJob/view?id=abc123',
+              startedAt: Date.now() - 5000,
+              state: 'running',
+              duration: 5000,
+            }),
           }],
           total: 1,
           tenantPath: '/training/',
@@ -105,11 +130,17 @@ describe('batch-jobs module', () => {
           rows: [
             {
               id: 'persistentJob_job1',
-              html: `<tr><td cplace-control='{"name":"Job One","startedAt":${Date.now() - 3000}}'></td></tr>`,
+              html: rowHtml({
+                name: 'Job One', href: '/training/batchJob/view?id=job1',
+                startedAt: Date.now() - 3000, state: 'running', duration: 0,
+              }),
             },
             {
               id: 'persistentJob_job2',
-              html: `<tr><td cplace-control='{"name":"Job Two","startedAt":${Date.now() - 6000}}'></td></tr>`,
+              html: rowHtml({
+                name: 'Job Two', href: '/training/batchJob/view?id=job2',
+                startedAt: Date.now() - 6000, state: 'success', duration: 6000,
+              }),
             },
           ],
           total: 2,
@@ -122,6 +153,69 @@ describe('batch-jobs module', () => {
       const badge = panel.querySelector('.cplace-bj-badge');
       expect(badge).not.toBeNull();
       expect(badge.textContent).toContain('2');
+
+      mod.revert();
+    });
+
+    it('renders status icon, name link, and duration text', async () => {
+      const mod = await loadMod();
+      mod.apply();
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: {
+          rows: [
+            { id: 'persistentJob_done1', html: rowHtml({
+              name: 'Finished Job', href: '/training/batchJob/view?id=done1',
+              startedAt: Date.now() - 60_000, state: 'success', duration: 1500,
+            }) },
+            { id: 'persistentJob_run1', html: rowHtml({
+              name: 'Live Job', href: '/training/batchJob/view?id=run1',
+              startedAt: Date.now() - 3000, state: 'running', duration: 0,
+            }) },
+          ],
+          total: 2, tenantPath: '/training/',
+        },
+      }));
+
+      document.querySelector('.cplace-bj-badge').click();
+
+      const items = document.querySelectorAll('.cplace-bj-list li');
+      expect(items.length).toBe(2);
+
+      expect(items[0].querySelector('.cplace-bj-status--success')).not.toBeNull();
+      expect(items[0].querySelector('a').textContent).toBe('Finished Job');
+      expect(items[0].querySelector('a').getAttribute('href')).toBe('/training/batchJob/view?id=done1');
+      expect(items[0].querySelector('.cplace-bj-elapsed').textContent).toBe('1.5 s');
+
+      expect(items[1].querySelector('.cplace-bj-status--running')).not.toBeNull();
+      expect(items[1].querySelector('.cplace-bj-elapsed').dataset.startedAt).not.toBe('');
+
+      mod.revert();
+    });
+
+    it('caps the rendered list at 10 jobs', async () => {
+      const mod = await loadMod();
+      mod.apply();
+
+      const rows = [];
+      for (let i = 0; i < 12; i++) {
+        rows.push({
+          id: `persistentJob_job${i}`,
+          html: rowHtml({
+            name: `Job ${i}`, href: `/training/batchJob/view?id=job${i}`,
+            startedAt: Date.now() - i * 1000, state: 'success', duration: 100 + i,
+          }),
+        });
+      }
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: { rows, total: rows.length, tenantPath: '/training/' },
+      }));
+
+      document.querySelector('.cplace-bj-badge').click();
+
+      const items = document.querySelectorAll('.cplace-bj-list li');
+      expect(items.length).toBe(10);
 
       mod.revert();
     });

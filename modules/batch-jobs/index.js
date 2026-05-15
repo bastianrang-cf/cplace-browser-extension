@@ -25,25 +25,67 @@ function updateElapsedCounters() {
   });
 }
 
-function parseRows(rows, tenantPath) {
+const STATUS_ICON = {
+  success:          { ch: '✓', cls: 'cplace-bj-status--success' },
+  error:            { ch: '✗', cls: 'cplace-bj-status--error' },
+  errorInMigration: { ch: '✗', cls: 'cplace-bj-status--error' },
+  running:          { ch: '⟳', cls: 'cplace-bj-status--running' },
+  cancelled:        { ch: '⊘', cls: 'cplace-bj-status--cancelled' },
+  waitForCancel:    { ch: '⊘', cls: 'cplace-bj-status--cancelled' },
+  skipped:          { ch: '–', cls: 'cplace-bj-status--skipped' },
+  created:          { ch: '○', cls: 'cplace-bj-status--created' },
+};
+
+function formatDuration(ms) {
+  if (ms < 1000) return `${ms} ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)} s`;
+  const total = Math.floor(ms / 1000);
+  return `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, '0')}s`;
+}
+
+function parseRows(rows) {
   const jobs = [];
   for (const row of rows) {
     try {
-      const doc = new DOMParser().parseFromString(row.html, 'text/html');
+      const doc = new DOMParser().parseFromString(`<table>${row.html}</table>`, 'text/html');
       const tds = doc.querySelectorAll('td[cplace-control]');
       let name = '';
+      let linkHref = '';
       let startedAt = null;
+      let status = null;
+      let durationMs = null;
       for (const td of tds) {
-        try {
-          const ctrl = JSON.parse(td.getAttribute('cplace-control'));
-          if (ctrl.name !== undefined) name = ctrl.name;
-          if (ctrl.startedAt !== undefined) startedAt = ctrl.startedAt;
-        } catch (_) { /* skip malformed td */ }
+        let ctrl;
+        try { ctrl = JSON.parse(td.getAttribute('cplace-control')); } catch { continue; }
+        switch (ctrl.name) {
+          case 'name': {
+            name = typeof ctrl.value === 'string' ? ctrl.value : '';
+            const a = td.querySelector('a.assetLink');
+            if (a) linkHref = a.getAttribute('href') || '';
+            break;
+          }
+          case 'startedAt': {
+            const ts = td.querySelector('cplace-timestamp');
+            const raw = ts && ts.getAttribute('timestamp');
+            const n = raw ? parseInt(raw, 10) : NaN;
+            startedAt = Number.isNaN(n) ? null : n;
+            break;
+          }
+          case 'state': {
+            const el = td.querySelector('[data-status]');
+            status = el ? el.getAttribute('data-status') : (ctrl.value ?? null);
+            break;
+          }
+          case 'duration': {
+            const n = parseInt(ctrl.value, 10);
+            durationMs = Number.isNaN(n) ? null : n;
+            break;
+          }
+        }
       }
-      const jobId = row.id.replace('persistentJob_', '');
-      const linkUrl = window.location.origin + tenantPath + 'batchJob/' + jobId;
-      jobs.push({ id: row.id, name: name || row.id, startedAt, linkUrl });
-    } catch (_) { /* skip malformed row */ }
+      const id = (row.id || '').replace('persistentJob_', '');
+      jobs.push({ id, name: name || id, linkHref, startedAt, status, durationMs });
+    } catch { /* skip malformed row */ }
   }
   return jobs;
 }
@@ -66,7 +108,7 @@ function renderPanel(jobs) {
   if (!expanded) {
     const badge = document.createElement('button');
     badge.className = 'cplace-bj-badge';
-    badge.textContent = `Running Batch Jobs (${jobs.length}) ▾`;
+    badge.textContent = `Batch Jobs Today (${jobs.length}) ▾`;
     badge.addEventListener('click', () => {
       expanded = true;
       renderPanel(jobs);
@@ -79,7 +121,7 @@ function renderPanel(jobs) {
     const header = document.createElement('div');
     header.className = 'cplace-bj-header';
     const title = document.createElement('span');
-    title.textContent = `Running Batch Jobs (${jobs.length})`;
+    title.textContent = `Batch Jobs Today (${jobs.length})`;
     const closeBtn = document.createElement('button');
     closeBtn.className = 'cplace-bj-close';
     closeBtn.textContent = '✕';
@@ -95,17 +137,32 @@ function renderPanel(jobs) {
     const now = Date.now();
     for (const job of jobs) {
       const li = document.createElement('li');
+
+      const icon = document.createElement('span');
+      const s = STATUS_ICON[job.status] || STATUS_ICON.created;
+      icon.className = `cplace-bj-status ${s.cls}`;
+      icon.textContent = s.ch;
+
       const a = document.createElement('a');
-      a.href = job.linkUrl;
+      a.href = job.linkHref || '#';
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.textContent = job.name;
-      const elapsed = document.createElement('span');
-      elapsed.className = 'cplace-bj-elapsed';
-      elapsed.dataset.startedAt = job.startedAt ?? '';
-      elapsed.textContent = job.startedAt ? formatElapsed(now - job.startedAt) : '—';
+
+      const metric = document.createElement('span');
+      metric.className = 'cplace-bj-elapsed';
+      if (job.status === 'running' && job.startedAt) {
+        metric.dataset.startedAt = String(job.startedAt);
+        metric.textContent = formatElapsed(now - job.startedAt);
+      } else if (job.durationMs != null) {
+        metric.textContent = formatDuration(job.durationMs);
+      } else {
+        metric.textContent = '—';
+      }
+
+      li.appendChild(icon);
       li.appendChild(a);
-      li.appendChild(elapsed);
+      li.appendChild(metric);
       list.appendChild(li);
     }
 
@@ -116,9 +173,8 @@ function renderPanel(jobs) {
 }
 
 function onResult(event) {
-  const { rows = [], tenantPath = '' } = event.detail || {};
-  const jobs = parseRows(rows, tenantPath);
-  renderPanel(jobs);
+  const { rows = [] } = event.detail || {};
+  renderPanel(parseRows(rows).slice(0, 10));
 }
 
 let tickFn = null;

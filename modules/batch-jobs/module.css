@@ -67,10 +67,11 @@
 #cplace-batch-jobs-panel .cplace-bj-list a {
   color: #1a56db;
   text-decoration: none;
-  max-width: 220px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
 }
 #cplace-batch-jobs-panel .cplace-bj-list a:hover {
   text-decoration: underline;
@@ -82,3 +83,17 @@
   margin-left: 8px;
   flex-shrink: 0;
 }
+#cplace-batch-jobs-panel .cplace-bj-status {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  margin-right: 8px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+#cplace-batch-jobs-panel .cplace-bj-status--success   { color: #16a34a; }
+#cplace-batch-jobs-panel .cplace-bj-status--error     { color: #dc2626; }
+#cplace-batch-jobs-panel .cplace-bj-status--running   { color: #2563eb; }
+#cplace-batch-jobs-panel .cplace-bj-status--cancelled { color: #6b7280; }
+#cplace-batch-jobs-panel .cplace-bj-status--skipped   { color: #9ca3af; }
+#cplace-batch-jobs-panel .cplace-bj-status--created   { color: #9ca3af; }
