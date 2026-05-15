@@ -4,11 +4,44 @@ let onResult = null;
 let onKey = null;
 let active = false;
 
+function formatBuildTime(raw) {
+  if (!raw) return raw;
+  const m = String(raw).match(/^(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})(\d{2})$/);
+  if (!m) return raw;
+  return `${m[1]} ${m[2]}:${m[3]}:${m[4]}`;
+}
+
+function parseChangeSet(raw) {
+  if (raw == null) return { commit: raw, version: null };
+  const m = String(raw).match(/^([^(]+)\(([^)]+)\)$/);
+  if (m) return { commit: m[1], version: m[2] };
+  return { commit: String(raw), version: null };
+}
+
+function formatChangeSet(raw) {
+  const { commit, version } = parseChangeSet(raw);
+  if (version) return `Commit: ${commit} Version: ${version}`;
+  return commit != null ? commit : '';
+}
+
+function releaseToKbUrl(release) {
+  if (!release) return null;
+  return `https://kb.cplace.com/release-information/readme/${String(release).replace(/\./g, '-')}`;
+}
+
 function buildIdentifierRow(b) {
   const tr = document.createElement('tr');
-  for (const key of ['name', 'release', 'changeSetId', 'buildTime']) {
+  const { version } = parseChangeSet(b.changeSetId);
+  if (!version || !version.startsWith('release-version')) {
+    tr.className = 'cplace-si-row-warn';
+  }
+  for (const [key, text] of [
+    ['name', b.name != null ? String(b.name) : ''],
+    ['changeSetId', formatChangeSet(b.changeSetId)],
+    ['buildTime', formatBuildTime(b.buildTime) ?? ''],
+  ]) {
     const td = document.createElement('td');
-    td.textContent = b[key] != null ? String(b[key]) : '';
+    td.textContent = text;
     tr.appendChild(td);
   }
   return tr;
@@ -30,13 +63,27 @@ function renderContent(data) {
   for (const [label, value] of [
     ['Name', main.name],
     ['Release', main.release],
-    ['Change set', main.changeSetId],
-    ['Build time', main.buildTime],
+    ['Change set', formatChangeSet(main.changeSetId) || (main.changeSetId != null ? String(main.changeSetId) : null)],
+    ['Build time', formatBuildTime(main.buildTime)],
   ]) {
     const dt = document.createElement('dt');
     dt.textContent = label;
     const dd = document.createElement('dd');
-    dd.textContent = value != null ? String(value) : '—';
+    if (label === 'Release' && value != null) {
+      const url = releaseToKbUrl(value);
+      if (url) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = String(value);
+        dd.appendChild(a);
+      } else {
+        dd.textContent = String(value);
+      }
+    } else {
+      dd.textContent = value != null ? String(value) : '—';
+    }
     dl.appendChild(dt);
     dl.appendChild(dd);
   }
@@ -54,7 +101,7 @@ function renderContent(data) {
     table.className = 'cplace-si-table';
     const thead = document.createElement('thead');
     const headRow = document.createElement('tr');
-    for (const h of ['Name', 'Release', 'Change set', 'Build time']) {
+    for (const h of ['Name', 'Change set', 'Build time']) {
       const th = document.createElement('th');
       th.textContent = h;
       headRow.appendChild(th);
