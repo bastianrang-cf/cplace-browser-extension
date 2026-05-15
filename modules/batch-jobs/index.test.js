@@ -166,7 +166,35 @@ describe('batch-jobs module', () => {
       expect(panel).not.toBeNull();
       const badge = panel.querySelector('.cplace-bj-badge');
       expect(badge).not.toBeNull();
-      expect(badge.textContent).toContain('2');
+      expect(badge.textContent).toBe('Latest 10 Batch jobs ▾');
+
+      mod.revert();
+    });
+
+    it('expanded header shows link to batch jobs page', async () => {
+      const mod = await loadMod();
+      mod.apply();
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: {
+          rows: [{
+            id: 'persistentJob_job1',
+            html: rowHtml({
+              name: 'Job One', href: '/training/batchJob/view?id=job1',
+              startedAt: Date.now() - 3000, state: 'running', duration: 0,
+            }),
+          }],
+          total: 1, tenantPath: '/training/',
+        },
+      }));
+
+      document.querySelector('.cplace-bj-badge').click();
+
+      const headerLink = document.querySelector('.cplace-bj-header a');
+      expect(headerLink).not.toBeNull();
+      expect(headerLink.textContent).toBe('Latest 10 Batch jobs');
+      expect(headerLink.getAttribute('href')).toMatch(/\/training\/batchJob\/jobs$/);
+      expect(headerLink.getAttribute('target')).toBe('_blank');
 
       mod.revert();
     });
@@ -199,10 +227,19 @@ describe('batch-jobs module', () => {
       expect(items[0].querySelector('.cplace-bj-status--success')).not.toBeNull();
       expect(items[0].querySelector('a').textContent).toBe('Finished Job');
       expect(items[0].querySelector('a').getAttribute('href')).toBe('/training/batchJob/view?id=done1');
+      expect(items[0].querySelector('a').getAttribute('title')).toBe('Finished Job');
+      expect(items[0].querySelector('.cplace-bj-workspace').textContent).toBe('training');
+      expect(items[0].querySelector('.cplace-bj-started-at')).not.toBeNull();
       expect(items[0].querySelector('.cplace-bj-elapsed').textContent).toBe('1.5 s');
+
+      // startedAt should appear above elapsed in DOM order within timing column
+      const timing0 = items[0].querySelector('.cplace-bj-timing');
+      expect(timing0.firstElementChild.classList.contains('cplace-bj-started-at')).toBe(true);
+      expect(timing0.lastElementChild.classList.contains('cplace-bj-elapsed')).toBe(true);
 
       expect(items[1].querySelector('.cplace-bj-status--running')).not.toBeNull();
       expect(items[1].querySelector('.cplace-bj-elapsed').dataset.startedAt).not.toBe('');
+      expect(items[1].querySelector('a').getAttribute('title')).toBe('Live Job');
 
       mod.revert();
     });

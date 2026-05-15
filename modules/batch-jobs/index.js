@@ -43,6 +43,12 @@ function formatDuration(ms) {
   return `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, '0')}s`;
 }
 
+function formatTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+}
+
 function parseRows(rows) {
   const jobs = [];
   for (const row of rows) {
@@ -90,7 +96,7 @@ function parseRows(rows) {
   return jobs;
 }
 
-function renderPanel(jobs) {
+function renderPanel(jobs, tenantPath = '') {
   if (jobs.length === 0) {
     document.getElementById(PANEL_ID)?.remove();
     return;
@@ -105,13 +111,15 @@ function renderPanel(jobs) {
 
   panel.innerHTML = '';
 
+  const workspace = (tenantPath || '').split('/').filter(Boolean)[0] || '';
+
   if (!expanded) {
     const badge = document.createElement('button');
     badge.className = 'cplace-bj-badge';
-    badge.textContent = `Batch Jobs Today (${jobs.length}) ▾`;
+    badge.textContent = 'Latest 10 Batch jobs ▾';
     badge.addEventListener('click', () => {
       expanded = true;
-      renderPanel(jobs);
+      renderPanel(jobs, tenantPath);
     });
     panel.appendChild(badge);
   } else {
@@ -120,14 +128,22 @@ function renderPanel(jobs) {
 
     const header = document.createElement('div');
     header.className = 'cplace-bj-header';
-    const title = document.createElement('span');
-    title.textContent = `Batch Jobs Today (${jobs.length})`;
+    let title;
+    if (tenantPath) {
+      title = document.createElement('a');
+      title.href = window.location.origin + tenantPath + 'batchJob/jobs';
+      title.target = '_blank';
+      title.rel = 'noopener noreferrer';
+    } else {
+      title = document.createElement('span');
+    }
+    title.textContent = 'Latest 10 Batch jobs';
     const closeBtn = document.createElement('button');
     closeBtn.className = 'cplace-bj-close';
     closeBtn.textContent = '✕';
     closeBtn.addEventListener('click', () => {
       expanded = false;
-      renderPanel(jobs);
+      renderPanel(jobs, tenantPath);
     });
     header.appendChild(title);
     header.appendChild(closeBtn);
@@ -143,11 +159,29 @@ function renderPanel(jobs) {
       icon.className = `cplace-bj-status ${s.cls}`;
       icon.textContent = s.ch;
 
+      const jobInfo = document.createElement('div');
+      jobInfo.className = 'cplace-bj-job-info';
+
       const a = document.createElement('a');
       a.href = job.linkHref || '#';
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.textContent = job.name;
+      a.title = job.name;
+
+      const workspaceEl = document.createElement('small');
+      workspaceEl.className = 'cplace-bj-workspace';
+      workspaceEl.textContent = workspace;
+
+      jobInfo.appendChild(a);
+      jobInfo.appendChild(workspaceEl);
+
+      const timing = document.createElement('div');
+      timing.className = 'cplace-bj-timing';
+
+      const startedAtEl = document.createElement('span');
+      startedAtEl.className = 'cplace-bj-started-at';
+      startedAtEl.textContent = formatTime(job.startedAt);
 
       const metric = document.createElement('span');
       metric.className = 'cplace-bj-elapsed';
@@ -160,9 +194,12 @@ function renderPanel(jobs) {
         metric.textContent = '—';
       }
 
+      timing.appendChild(startedAtEl);
+      timing.appendChild(metric);
+
       li.appendChild(icon);
-      li.appendChild(a);
-      li.appendChild(metric);
+      li.appendChild(jobInfo);
+      li.appendChild(timing);
       list.appendChild(li);
     }
 
@@ -173,8 +210,8 @@ function renderPanel(jobs) {
 }
 
 function onResult(event) {
-  const { rows = [] } = event.detail || {};
-  renderPanel(parseRows(rows).slice(0, 10));
+  const { rows = [], tenantPath = '' } = event.detail || {};
+  renderPanel(parseRows(rows).slice(0, 10), tenantPath);
 }
 
 let tickFn = null;
