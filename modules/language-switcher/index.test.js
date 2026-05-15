@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
-import mod from '../modules/language-switcher/index.js';
+import mod from './index.js';
 
 beforeEach(() => {
   fakeBrowser.reset();

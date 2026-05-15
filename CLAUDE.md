@@ -39,7 +39,9 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 
 ### Adding a new module
 
-1. Create `modules/<id>/index.js` with a default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
+1. Create a `modules/<id>/` directory containing:
+   - `index.js` — default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
+   - `index.test.js` — Vitest tests for the module (picked up automatically).
 
 That's it — the registry auto-discovers all `modules/*/index.js` files via `import.meta.glob`. No other files need to change.
 
@@ -59,10 +61,11 @@ Extension-origin scripts loaded via `src` are always CSP-safe — no `unsafe-inl
 
 ## Testing
 
-Tests live in `tests/`. Run with `npm test` (uses Vitest + `@webext-core/fake-browser` via the `WxtVitest` plugin).
+Run with `npm test` (uses Vitest + `@webext-core/fake-browser` via the `WxtVitest` plugin).
+
+Module tests live alongside the module: `modules/<id>/index.test.js`. Core tests live in `tests/`:
 
 - `tests/registry.test.js` — pure registry logic
-- `tests/admin-access-highlight.test.js` — module apply/revert DOM behavior
 - `tests/background.test.js` — onInstalled seeding, onMessage routing
 - `tests/content.test.js` — detection, module lifecycle, toggle handling
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import mod from '../modules/admin-access-highlight/index.js';
+import mod from './index.js';
 
 beforeEach(() => {
   document.documentElement.innerHTML = '<head></head><body></body>';
