@@ -6,9 +6,7 @@ const modules = Object.keys(globbed)
   .filter(
     (mod) =>
       mod != null &&
-      typeof mod.id === 'string' &&
-      typeof mod.apply === 'function' &&
-      typeof mod.revert === 'function',
+      typeof mod.id === 'string',
   );
 
 export const registry = {

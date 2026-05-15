@@ -84,14 +84,14 @@ describe('content — module initialization', () => {
     await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': true } });
     await loadContent();
 
-    expect(document.getElementById('cplace-admin-access-highlight-style')).not.toBeNull();
+    expect(document.getElementById('cplace-admin-access-highlight-link')).not.toBeNull();
   });
 
   it('does not apply disabled modules', async () => {
     await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': false } });
     await loadContent();
 
-    expect(document.getElementById('cplace-admin-access-highlight-style')).toBeNull();
+    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
   });
 });
 
@@ -106,7 +106,7 @@ describe('content — cplace:moduleToggle listener', () => {
       enabled: true,
     });
 
-    expect(document.getElementById('cplace-admin-access-highlight-style')).not.toBeNull();
+    expect(document.getElementById('cplace-admin-access-highlight-link')).not.toBeNull();
   });
 
   it('reverts a module when enabled:false message is received', async () => {
@@ -119,7 +119,7 @@ describe('content — cplace:moduleToggle listener', () => {
       enabled: false,
     });
 
-    expect(document.getElementById('cplace-admin-access-highlight-style')).toBeNull();
+    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
   });
 
   it('ignores messages with unknown module ids', async () => {
@@ -138,7 +138,7 @@ describe('content — cplace:moduleToggle listener', () => {
     await loadContent();
     await fakeBrowser.runtime.onMessage.trigger({ type: 'other:message' });
 
-    expect(document.getElementById('cplace-admin-access-highlight-style')).toBeNull();
+    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
   });
 });
 
@@ -249,7 +249,7 @@ describe('content — storage.onChanged backstop', () => {
     // Writing to storage fires onChanged automatically in fakeBrowser
     await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': true } });
 
-    expect(document.getElementById('cplace-admin-access-highlight-style')).not.toBeNull();
+    expect(document.getElementById('cplace-admin-access-highlight-link')).not.toBeNull();
   });
 
   it('ignores changes to areas other than local', async () => {
@@ -258,6 +258,6 @@ describe('content — storage.onChanged backstop', () => {
 
     await fakeBrowser.storage.sync.set({ enabledModules: { 'admin-access-highlight': true } });
 
-    expect(document.getElementById('cplace-admin-access-highlight-style')).toBeNull();
+    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
   });
 });

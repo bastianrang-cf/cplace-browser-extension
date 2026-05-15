@@ -1,0 +1,84 @@
+#cplace-batch-jobs-panel {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+}
+#cplace-batch-jobs-panel .cplace-bj-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #1a56db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+#cplace-batch-jobs-panel .cplace-bj-expanded-panel {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  min-width: 320px;
+  overflow: hidden;
+}
+#cplace-batch-jobs-panel .cplace-bj-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #1a56db;
+  color: #fff;
+}
+#cplace-batch-jobs-panel .cplace-bj-header span {
+  font-weight: 600;
+}
+#cplace-batch-jobs-panel .cplace-bj-close {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+}
+#cplace-batch-jobs-panel .cplace-bj-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+#cplace-batch-jobs-panel .cplace-bj-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid #f3f4f6;
+}
+#cplace-batch-jobs-panel .cplace-bj-list li:last-child {
+  border-bottom: none;
+}
+#cplace-batch-jobs-panel .cplace-bj-list a {
+  color: #1a56db;
+  text-decoration: none;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#cplace-batch-jobs-panel .cplace-bj-list a:hover {
+  text-decoration: underline;
+}
+#cplace-batch-jobs-panel .cplace-bj-elapsed {
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}

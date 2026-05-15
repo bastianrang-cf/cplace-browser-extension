@@ -29,35 +29,45 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 ### Core vs modules
 
 - **Core** (always on): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set.
-- **Modules** (opt-in, in `modules/`): each module lives in its own subdirectory (`modules/<id>/index.js`) and exports a default descriptor `{ id, name, description, defaultEnabled, apply(), revert() }`. `modules/registry.js` auto-discovers all modules and exposes `{ all(), byId(id), defaultEnabledMap() }`.
+- **Modules** (opt-in, in `modules/`): each module lives in its own subdirectory (`modules/<id>/index.js`) and exports a default descriptor `{ id, name, description, defaultEnabled, ...flags }`. `modules/registry.js` auto-discovers all modules and exposes `{ all(), byId(id), defaultEnabledMap() }`.
 
 ### Module lifecycle
 
 1. On install, `background.js` seeds `browser.storage.local.enabledModules` from `registry.defaultEnabledMap()` (only fills gaps; existing keys are preserved).
-2. Content script reads `enabledModules` on load and calls `apply()` for each enabled module. State (which modules are currently applied) is tracked in a per-tab `Set` so toggles are idempotent.
+2. Content script reads `enabledModules` on load and applies each enabled module — injecting declared assets (CSS, page scripts) then calling `apply()`. State is tracked in a per-tab `Set` so toggles are idempotent.
 3. Options page writes to `browser.storage.local` and sends `{ type: 'cplace:moduleToggle', id, enabled }` to the background, which fans out via `browser.tabs.sendMessage` to every tab. Content scripts also listen on `browser.storage.onChanged` as a backstop.
 
 ### Adding a new module
 
 1. Create a `modules/<id>/` directory containing:
-   - `index.js` — default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
+   - `index.js` — default export with `id`, `name`, `description`, `defaultEnabled`, and optional asset flags (see below). Add `apply()` / `revert()` only for business logic beyond asset injection; both are optional.
    - `index.test.js` — Vitest tests for the module (picked up automatically).
+   - `module.css` *(optional)* — module styles; declare `css: true` in the descriptor to have the framework auto-inject/remove them.
+   - `page.js` *(optional)* — page-world IIFE; declare `pageScript: true` in the descriptor to have the framework auto-inject/remove it.
 
 That's it — the registry auto-discovers all `modules/*/index.js` files via `import.meta.glob`. No other files need to change.
 
 **README:** Whenever you add a new module or change an existing module's name, description, or default, update the **Modules** table in `README.md` to match.
 
-### Page-world script injection (CSP-safe pattern)
+### Module asset injection (CSP-safe pattern)
 
-Content scripts run in an isolated world. If a module needs to access page-level globals (e.g. `_cplace_languages_`, `jQuery`), it must inject a script into the page's MAIN world. **Never use `script.textContent`** — that counts as inline script execution and is blocked by pages with a strict CSP.
+**Never use `style.textContent` or `script.textContent`** — inline styles/scripts are blocked by pages with a strict CSP and mix presentation/page-world concerns into JS.
 
-Instead:
-1. Place the page-world logic in `modules/<id>/page.js` (plain IIFE, no ES module exports).
-2. In `apply()`, inject via `script.src = browser.runtime.getURL('<id>-page.js')`.
+The framework in `content.js` automatically handles asset injection via flags on the module descriptor. Helpers live in `modules/utils.js` (used internally by the framework — modules do not import utils directly).
 
-The build automatically copies each `modules/<id>/page.js` to `<id>-page.js` in the extension root and `web_accessible_resources` uses a `*-page.js` glob — no `wxt.config.js` changes needed.
+**CSS styles** (`modules/<id>/module.css`):
+- Place styles in `modules/<id>/module.css`.
+- Declare `css: true` in the descriptor.
+- The framework injects `<link id="cplace-<id>-link" rel="stylesheet" href="<id>-module.css">` on apply and removes it on revert.
 
-Extension-origin scripts loaded via `src` are always CSP-safe — no `unsafe-inline` required.
+**Page-world scripts** (`modules/<id>/page.js`):
+- Place page-world logic in `modules/<id>/page.js` (plain IIFE, no ES module exports). Use this when a module needs access to page-level globals (e.g. `_cplace_languages_`, `jQuery`).
+- Declare `pageScript: true` in the descriptor.
+- The framework injects `<script id="cplace-<id>-script" src="<id>-page.js">` on apply and removes the element on revert.
+
+The build automatically copies each `modules/<id>/module.css` → `<id>-module.css` and `modules/<id>/page.js` → `<id>-page.js` in the extension root; `web_accessible_resources` covers `*-module.css` and `*-page.js` — no `wxt.config.js` changes needed.
+
+Extension-origin resources loaded via `href`/`src` are always CSP-safe — no `unsafe-inline` required.
 
 ## Testing
 

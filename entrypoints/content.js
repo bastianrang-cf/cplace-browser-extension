@@ -1,5 +1,6 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import { registry } from '../modules/registry.js';
+import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../modules/utils.js';
 
 const STORAGE_KEY = 'enabledModules';
 
@@ -29,7 +30,9 @@ export default defineContentScript({
       const isActive = activeModules.has(id);
       if (enabled && !isActive) {
         try {
-          mod.apply();
+          if (mod.css) injectModuleCSS(mod.id);
+          if (mod.pageScript) injectPageScript(mod.id);
+          mod.apply?.();
           activeModules.add(id);
         } catch (e) {
           console.warn('[cplace] module apply failed:', id, e);
@@ -37,7 +40,9 @@ export default defineContentScript({
         notifyVersionDetected(mod);
       } else if (!enabled && isActive) {
         try {
-          mod.revert();
+          mod.revert?.();
+          if (mod.css) removeModuleCSS(mod.id);
+          if (mod.pageScript) removePageScript(mod.id);
           activeModules.delete(id);
         } catch (e) {
           console.warn('[cplace] module revert failed:', id, e);

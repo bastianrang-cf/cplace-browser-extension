@@ -28,23 +28,19 @@ describe('batch-jobs module', () => {
     expect(mod.defaultEnabled).toBe(false);
   });
 
+  it('has css and pageScript flags set', async () => {
+    const mod = await loadMod();
+    expect(mod.css).toBe(true);
+    expect(mod.pageScript).toBe(true);
+  });
+
   describe('apply()', () => {
     it('is idempotent — calling twice does not double-register intervals', async () => {
       vi.useFakeTimers();
       const mod = await loadMod();
       mod.apply();
       mod.apply();
-      // Only one interval should have been set for polling and one for tick
       expect(vi.getTimerCount()).toBe(2);
-      mod.revert();
-    });
-
-    it('injects the page-world script into the document', async () => {
-      const mod = await loadMod();
-      mod.apply();
-      const script = document.querySelector('script[data-cplace-batch-jobs]');
-      expect(script).not.toBeNull();
-      expect(script.src).toContain('batch-jobs-page.js');
       mod.revert();
     });
   });
@@ -55,11 +51,10 @@ describe('batch-jobs module', () => {
       expect(() => mod.revert()).not.toThrow();
     });
 
-    it('removes panel and style elements after apply', async () => {
+    it('removes the panel element after apply', async () => {
       const mod = await loadMod();
       mod.apply();
 
-      // Simulate a result event with jobs
       document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
         detail: {
           rows: [{
@@ -76,7 +71,6 @@ describe('batch-jobs module', () => {
       mod.revert();
 
       expect(document.getElementById('cplace-batch-jobs-panel')).toBeNull();
-      expect(document.getElementById('cplace-batch-jobs-style')).toBeNull();
     });
 
     it('clears both intervals', async () => {
