@@ -43,7 +43,7 @@ describe('background — onInstalled', () => {
 
   it('does not call storage.set when all keys already exist', async () => {
     await fakeBrowser.storage.local.set({
-      enabledModules: { 'admin-access-highlight': true, 'batch-jobs': false, 'language-switcher': false, 'version-badge': true },
+      enabledModules: { 'admin-access-highlight': true, 'batch-jobs': false, 'language-switcher': false, 'system-info': false, 'version-badge': true },
     });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');
     await loadBackground();
