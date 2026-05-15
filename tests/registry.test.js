@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { registry } from '../modules/registry.js';
-import adminAccessHighlight from '../modules/admin-access-highlight.js';
+import adminAccessHighlight from '../modules/admin-access-highlight/index.js';
 
 describe('registry', () => {
   describe('all()', () => {

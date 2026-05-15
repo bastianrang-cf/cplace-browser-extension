@@ -29,7 +29,7 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 ### Core vs modules
 
 - **Core** (always on): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set.
-- **Modules** (opt-in, in `modules/`): each module file exports a default descriptor `{ id, name, description, defaultEnabled, apply(), revert() }`. `modules/registry.js` imports all modules and exposes `{ all(), byId(id), defaultEnabledMap() }`.
+- **Modules** (opt-in, in `modules/`): each module lives in its own subdirectory (`modules/<id>/index.js`) and exports a default descriptor `{ id, name, description, defaultEnabled, apply(), revert() }`. `modules/registry.js` auto-discovers all modules and exposes `{ all(), byId(id), defaultEnabledMap() }`.
 
 ### Module lifecycle
 
@@ -39,10 +39,11 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 
 ### Adding a new module
 
-1. Create `modules/<id>.js` with a default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
-2. Import it in `modules/registry.js` and add it to the `modules` array.
+1. Create a `modules/<id>/` directory containing:
+   - `index.js` — default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
+   - `index.test.js` — Vitest tests for the module (picked up automatically).
 
-That's it — WXT handles loading it in all contexts automatically.
+That's it — the registry auto-discovers all `modules/*/index.js` files via `import.meta.glob`. No other files need to change.
 
 **README:** Whenever you add a new module or change an existing module's name, description, or default, update the **Modules** table in `README.md` to match.
 
@@ -51,18 +52,20 @@ That's it — WXT handles loading it in all contexts automatically.
 Content scripts run in an isolated world. If a module needs to access page-level globals (e.g. `_cplace_languages_`, `jQuery`), it must inject a script into the page's MAIN world. **Never use `script.textContent`** — that counts as inline script execution and is blocked by pages with a strict CSP.
 
 Instead:
-1. Place the page-world logic in `public/<id>-page.js` (WXT copies `public/` into the extension root verbatim).
-2. Declare the file in `wxt.config.js` under `manifest.web_accessible_resources` so pages can load it.
-3. In `apply()`, inject via `script.src = browser.runtime.getURL('<id>-page.js')`.
+1. Place the page-world logic in `modules/<id>/page.js` (plain IIFE, no ES module exports).
+2. In `apply()`, inject via `script.src = browser.runtime.getURL('<id>-page.js')`.
+
+The build automatically copies each `modules/<id>/page.js` to `<id>-page.js` in the extension root and `web_accessible_resources` uses a `*-page.js` glob — no `wxt.config.js` changes needed.
 
 Extension-origin scripts loaded via `src` are always CSP-safe — no `unsafe-inline` required.
 
 ## Testing
 
-Tests live in `tests/`. Run with `npm test` (uses Vitest + `@webext-core/fake-browser` via the `WxtVitest` plugin).
+Run with `npm test` (uses Vitest + `@webext-core/fake-browser` via the `WxtVitest` plugin).
+
+Module tests live alongside the module: `modules/<id>/index.test.js`. Core tests live in `tests/`:
 
 - `tests/registry.test.js` — pure registry logic
-- `tests/admin-access-highlight.test.js` — module apply/revert DOM behavior
 - `tests/background.test.js` — onInstalled seeding, onMessage routing
 - `tests/content.test.js` — detection, module lifecycle, toggle handling
 

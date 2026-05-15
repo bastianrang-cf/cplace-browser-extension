@@ -1,9 +1,15 @@
-import adminAccessHighlight from './admin-access-highlight.js';
-import batchJobs from './batch-jobs.js';
-import languageSwitcher from './language-switcher.js';
-import versionBadge from './version-badge.js';
+const globbed = import.meta.glob('./*/index.js', { eager: true });
 
-const modules = [adminAccessHighlight, batchJobs, languageSwitcher, versionBadge];
+const modules = Object.keys(globbed)
+  .sort()
+  .map((path) => globbed[path].default)
+  .filter(
+    (mod) =>
+      mod != null &&
+      typeof mod.id === 'string' &&
+      typeof mod.apply === 'function' &&
+      typeof mod.revert === 'function',
+  );
 
 export const registry = {
   all() {
