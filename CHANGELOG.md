@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.7.0...v0.8.0) (2026-05-15)
+
+
+### Features
+
+* auto-discover modules so adding one requires no core file edits ([#28](https://github.com/bastianrang-cf/cplace-browser-extension/issues/28)) ([48e3c50](https://github.com/bastianrang-cf/cplace-browser-extension/commit/48e3c50766f102fba3516e33319f864852437df6))
+* externalize module CSS and generalize asset injection via flags ([#31](https://github.com/bastianrang-cf/cplace-browser-extension/issues/31)) ([9d4a3db](https://github.com/bastianrang-cf/cplace-browser-extension/commit/9d4a3dbf382af26932e113dac730e24c403d4da0))
+
 ## [0.7.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.6.0...v0.7.0) (2026-05-15)
 
 
