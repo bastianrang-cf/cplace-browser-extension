@@ -40,9 +40,8 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 ### Adding a new module
 
 1. Create `modules/<id>.js` with a default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
-2. Import it in `modules/registry.js` and add it to the `modules` array.
 
-That's it — WXT handles loading it in all contexts automatically.
+That's it — the registry auto-discovers all `modules/*.js` files (excluding `*-page.js`) via `import.meta.glob`. No other files need to change.
 
 **README:** Whenever you add a new module or change an existing module's name, description, or default, update the **Modules** table in `README.md` to match.
 
@@ -51,9 +50,10 @@ That's it — WXT handles loading it in all contexts automatically.
 Content scripts run in an isolated world. If a module needs to access page-level globals (e.g. `_cplace_languages_`, `jQuery`), it must inject a script into the page's MAIN world. **Never use `script.textContent`** — that counts as inline script execution and is blocked by pages with a strict CSP.
 
 Instead:
-1. Place the page-world logic in `public/<id>-page.js` (WXT copies `public/` into the extension root verbatim).
-2. Declare the file in `wxt.config.js` under `manifest.web_accessible_resources` so pages can load it.
-3. In `apply()`, inject via `script.src = browser.runtime.getURL('<id>-page.js')`.
+1. Place the page-world logic in `modules/<id>-page.js` alongside the module file (plain IIFE, no ES module exports).
+2. In `apply()`, inject via `script.src = browser.runtime.getURL('<id>-page.js')`.
+
+The build automatically copies all `modules/*-page.js` files into the extension root and `web_accessible_resources` uses a `*-page.js` glob — no `wxt.config.js` changes needed.
 
 Extension-origin scripts loaded via `src` are always CSP-safe — no `unsafe-inline` required.
 
