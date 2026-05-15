@@ -205,8 +205,9 @@ describe('content — version detection', () => {
     expect(script).toBeNull();
   });
 
-  it('sends cplace:version with version when versionDetected fires', async () => {
-    document.body.innerHTML = '<div id="cplace"></div>';
+  it('calls onVersionDetected on active modules when cplace:versionDetected fires', async () => {
+    await fakeBrowser.storage.local.set({ enabledModules: { 'version-badge': true } });
+    vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
     await loadContent();
     vi.clearAllMocks();
 
@@ -215,21 +216,28 @@ describe('content — version detection', () => {
     }));
 
     expect(fakeBrowser.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'cplace:version', version: '25.4' }),
+      expect.objectContaining({ type: 'cplace:setBadge', text: '25.4' }),
     );
   });
 
-  it('sends version:null when versionDetected fires with no version', async () => {
-    document.body.innerHTML = '<div id="cplace"></div>';
+  it('calls onVersionDetected on newly applied module when version already known', async () => {
+    await fakeBrowser.storage.local.set({ enabledModules: { 'version-badge': false } });
+    vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
     await loadContent();
-    vi.clearAllMocks();
 
     document.dispatchEvent(new CustomEvent('cplace:versionDetected', {
-      detail: {},
+      detail: { version: '25.4' },
     }));
+    vi.clearAllMocks();
+
+    await fakeBrowser.runtime.onMessage.trigger({
+      type: 'cplace:moduleToggle',
+      id: 'version-badge',
+      enabled: true,
+    });
 
     expect(fakeBrowser.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'cplace:version', version: null }),
+      expect.objectContaining({ type: 'cplace:setBadge', text: '25.4' }),
     );
   });
 });
