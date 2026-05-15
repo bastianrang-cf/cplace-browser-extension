@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.6.0...v0.7.0) (2026-05-15)
+
+
+### Features
+
+* add toggleable version badge module (default on) ([#26](https://github.com/bastianrang-cf/cplace-browser-extension/issues/26)) ([3c1865c](https://github.com/bastianrang-cf/cplace-browser-extension/commit/3c1865c5a24897528a2eece5151ee43c8f92da84))
+
 ## [0.6.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.5.0...v0.6.0) (2026-05-14)
 
 
