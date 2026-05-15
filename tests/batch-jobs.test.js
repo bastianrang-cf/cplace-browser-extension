@@ -13,7 +13,7 @@ afterEach(() => {
 
 async function loadMod() {
   vi.resetModules();
-  const { default: mod } = await import('../modules/batch-jobs.js');
+  const { default: mod } = await import('../modules/batch-jobs/index.js');
   return mod;
 }
 

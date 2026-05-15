@@ -1,7 +1,7 @@
 import { defineConfig } from 'wxt';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { readdirSync, copyFileSync } from 'fs';
+import { dirname, join, basename } from 'path';
+import { readdirSync, copyFileSync, existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -11,10 +11,12 @@ function copyModulePageScripts() {
     writeBundle(options) {
       const outDir = options.dir;
       if (!outDir) return;
-      const files = readdirSync(join(__dirname, 'modules'))
-        .filter((f) => f.endsWith('-page.js'));
-      for (const file of files) {
-        copyFileSync(join(__dirname, 'modules', file), join(outDir, file));
+      const modulesDir = join(__dirname, 'modules');
+      for (const entry of readdirSync(modulesDir)) {
+        const pageScript = join(modulesDir, entry, 'page.js');
+        if (existsSync(pageScript)) {
+          copyFileSync(pageScript, join(outDir, `${entry}-page.js`));
+        }
       }
     },
   };

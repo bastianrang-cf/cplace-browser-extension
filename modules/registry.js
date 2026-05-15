@@ -1,4 +1,4 @@
-const globbed = import.meta.glob(['./*.js', '!./*-page.js'], { eager: true });
+const globbed = import.meta.glob('./*/index.js', { eager: true });
 
 const modules = Object.keys(globbed)
   .sort()

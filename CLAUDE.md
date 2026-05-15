@@ -29,7 +29,7 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 ### Core vs modules
 
 - **Core** (always on): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set.
-- **Modules** (opt-in, in `modules/`): each module file exports a default descriptor `{ id, name, description, defaultEnabled, apply(), revert() }`. `modules/registry.js` imports all modules and exposes `{ all(), byId(id), defaultEnabledMap() }`.
+- **Modules** (opt-in, in `modules/`): each module lives in its own subdirectory (`modules/<id>/index.js`) and exports a default descriptor `{ id, name, description, defaultEnabled, apply(), revert() }`. `modules/registry.js` auto-discovers all modules and exposes `{ all(), byId(id), defaultEnabledMap() }`.
 
 ### Module lifecycle
 
@@ -39,9 +39,9 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 
 ### Adding a new module
 
-1. Create `modules/<id>.js` with a default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
+1. Create `modules/<id>/index.js` with a default export `{ id, name, description, defaultEnabled, apply, revert }`. Keep `apply` idempotent and `revert` exact (so live toggles are clean).
 
-That's it — the registry auto-discovers all `modules/*.js` files (excluding `*-page.js`) via `import.meta.glob`. No other files need to change.
+That's it — the registry auto-discovers all `modules/*/index.js` files via `import.meta.glob`. No other files need to change.
 
 **README:** Whenever you add a new module or change an existing module's name, description, or default, update the **Modules** table in `README.md` to match.
 
@@ -50,10 +50,10 @@ That's it — the registry auto-discovers all `modules/*.js` files (excluding `*
 Content scripts run in an isolated world. If a module needs to access page-level globals (e.g. `_cplace_languages_`, `jQuery`), it must inject a script into the page's MAIN world. **Never use `script.textContent`** — that counts as inline script execution and is blocked by pages with a strict CSP.
 
 Instead:
-1. Place the page-world logic in `modules/<id>-page.js` alongside the module file (plain IIFE, no ES module exports).
+1. Place the page-world logic in `modules/<id>/page.js` (plain IIFE, no ES module exports).
 2. In `apply()`, inject via `script.src = browser.runtime.getURL('<id>-page.js')`.
 
-The build automatically copies all `modules/*-page.js` files into the extension root and `web_accessible_resources` uses a `*-page.js` glob — no `wxt.config.js` changes needed.
+The build automatically copies each `modules/<id>/page.js` to `<id>-page.js` in the extension root and `web_accessible_resources` uses a `*-page.js` glob — no `wxt.config.js` changes needed.
 
 Extension-origin scripts loaded via `src` are always CSP-safe — no `unsafe-inline` required.
 
