@@ -12,11 +12,17 @@
     var tenantPath = contextUrl.pathname;
     var url = contextUrl.href + 'flexigrid/customTableData';
 
+    var d = new Date();
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+
     var formData = new FormData();
     formData.append('componentIdentifier', tenantPath + 'batchJob/persistentJobsTableSpecification');
-    formData.append('columns', JSON.stringify(['_name_', 'createdAt', 'createdBy', 'startedAt', 'state', 'duration', 'errorMessage']));
+    formData.append('columns', JSON.stringify(['_name_', 'createdAt', 'createdBy', 'startedAt', 'state', 'duration']));
     formData.append('searchValue', '');
-    formData.append('filters', JSON.stringify({ state: [{ exactValue: '_empty_' }, { exactValue: 'serror' }] }));
+    formData.append('filters', JSON.stringify({
+      createdAt: [{ rangeFilter: { rangeFrom: today, type: 'DATE', rangeFromComparator: '>=', rangeToComparator: '<' } }],
+    }));
     formData.append('groupBy', '');
     formData.append('singleSpaced', 'false');
     formData.append('fromUserConfigEdit', 'false');
