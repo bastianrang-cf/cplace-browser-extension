@@ -28,6 +28,7 @@ describe('background — onInstalled', () => {
       'admin-access-highlight': false,
       'batch-jobs': false,
       'language-switcher': false,
+      'version-badge': true,
     });
   });
 
@@ -42,7 +43,7 @@ describe('background — onInstalled', () => {
 
   it('does not call storage.set when all keys already exist', async () => {
     await fakeBrowser.storage.local.set({
-      enabledModules: { 'admin-access-highlight': true, 'batch-jobs': false, 'language-switcher': false },
+      enabledModules: { 'admin-access-highlight': true, 'batch-jobs': false, 'language-switcher': false, 'version-badge': true },
     });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');
     await loadBackground();
@@ -172,6 +173,91 @@ describe('background — onMessage: cplace:version', () => {
     );
 
     expect(fakeBrowser.action.setTitle).not.toHaveBeenCalled();
+    expect(fakeBrowser.action.setBadgeText).not.toHaveBeenCalled();
+  });
+});
+
+describe('background — onMessage: cplace:version — version-badge module', () => {
+  it('sets badge when version-badge is enabled (default)', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: null },
+      { tab: { id: 1 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fakeBrowser.action.setBadgeText).toHaveBeenCalledWith({ tabId: 1, text: '25.4' });
+  });
+
+  it('does not set badge when version-badge is disabled', async () => {
+    await fakeBrowser.storage.local.set({ enabledModules: { 'version-badge': false } });
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: null },
+      { tab: { id: 2 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fakeBrowser.action.setBadgeText).not.toHaveBeenCalled();
+  });
+});
+
+describe('background — onMessage: cplace:moduleToggle — version-badge', () => {
+  it('sets badge on cached tabs when toggled on', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: null },
+      { tab: { id: 10 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    fakeBrowser.action.setBadgeText.mockClear();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:moduleToggle', id: 'version-badge', enabled: true },
+      {},
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fakeBrowser.action.setBadgeText).toHaveBeenCalledWith({ tabId: 10, text: '25.4' });
+  });
+
+  it('clears badge on cached tabs when toggled off', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: null },
+      { tab: { id: 10 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    fakeBrowser.action.setBadgeText.mockClear();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:moduleToggle', id: 'version-badge', enabled: false },
+      {},
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fakeBrowser.action.setBadgeText).toHaveBeenCalledWith({ tabId: 10, text: '' });
+  });
+
+  it('removes tab from cache when cplace:status not found', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:version', version: '25.4', hostname: 'example.com', tenant: null },
+      { tab: { id: 10 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:status', found: false },
+      { tab: { id: 10 } },
+    );
+    fakeBrowser.action.setBadgeText.mockClear();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:moduleToggle', id: 'version-badge', enabled: true },
+      {},
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
     expect(fakeBrowser.action.setBadgeText).not.toHaveBeenCalled();
   });
 });
