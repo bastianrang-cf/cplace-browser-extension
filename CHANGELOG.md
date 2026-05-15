@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.9.0...v0.9.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **batch-jobs:** retitle overlay and enrich list rows ([#38](https://github.com/bastianrang-cf/cplace-browser-extension/issues/38)) ([85f2deb](https://github.com/bastianrang-cf/cplace-browser-extension/commit/85f2deb72a9bf6b80f9cf713f0d053ac428fb58f)), closes [#35](https://github.com/bastianrang-cf/cplace-browser-extension/issues/35)
+* **system-info:** text adjustments for build info display ([#37](https://github.com/bastianrang-cf/cplace-browser-extension/issues/37)) ([c0e46e1](https://github.com/bastianrang-cf/cplace-browser-extension/commit/c0e46e14f90f3a2ab00dab29fe8455075c294fd0)), closes [#36](https://github.com/bastianrang-cf/cplace-browser-extension/issues/36)
+
 ## [0.9.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.8.0...v0.9.0) (2026-05-15)
 
 
