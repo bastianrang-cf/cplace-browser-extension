@@ -18,6 +18,7 @@ A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions.
 | Batch Jobs overlay | off | Shows a live overlay of running batch jobs on every cplace page, polling every 15 s while the tab is visible |
 | Language Switcher | off | Switch the cplace display language from the extension popup |
 | Show system version as badge | on | Displays the detected cplace version number as a badge on the toolbar icon |
+| System Information | off | Adds a "System Info" popup button that fetches the tenant's system info and shows it in a dialog |
 
 Enable or disable modules on the **Options** page (`chrome://extensions` → cplace → Details → Extension options).
 
