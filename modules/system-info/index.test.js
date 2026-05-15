@@ -14,11 +14,11 @@ const sampleData = {
   mainBuildIdentifier: {
     name: 'cplace-ga-products',
     release: '25.4',
-    changeSetId: 'af300a5',
+    changeSetId: 'af300a5(release-version-25.4.183)',
     buildTime: '2026-05-11-222104',
   },
   buildIdentifiers: [
-    { name: 'cplace', release: '25.4', changeSetId: 'e9f8704', buildTime: '2026-05-11-220415' },
+    { name: 'cplace', release: '25.4', changeSetId: 'e9f8704(release-version-25.4.183)', buildTime: '2026-05-11-220415' },
     { name: 'cplace-rest', release: '25.4', changeSetId: '5a701a6', buildTime: '2026-05-11-221635' },
   ],
   mayViewAllSystemInfo: true,
@@ -118,6 +118,68 @@ describe('system-info module', () => {
       expect(rows.length).toBe(sampleData.buildIdentifiers.length);
       expect(rows[0].textContent).toContain('cplace');
       expect(rows[1].textContent).toContain('cplace-rest');
+      mod.revert();
+    });
+
+    it('formats build time as YYYY-MM-DD HH:MM:SS', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
+        detail: { data: sampleData, error: null },
+      }));
+      const dialog = document.getElementById('cplace-system-info-dialog');
+      expect(dialog.textContent).toContain('2026-05-11 22:21:04');
+      expect(dialog.textContent).not.toContain('2026-05-11-222104');
+      mod.revert();
+    });
+
+    it('omits the Release column from the build identifiers table', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
+        detail: { data: sampleData, error: null },
+      }));
+      const headers = Array.from(
+        document.querySelectorAll('#cplace-system-info-dialog .cplace-si-table th'),
+      ).map((th) => th.textContent);
+      expect(headers).not.toContain('Release');
+      expect(headers).toEqual(['Name', 'Change set', 'Build time']);
+      mod.revert();
+    });
+
+    it('formats change set as "Commit: X Version: Y" when parenthesized tag present', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
+        detail: { data: sampleData, error: null },
+      }));
+      const dialog = document.getElementById('cplace-system-info-dialog');
+      expect(dialog.textContent).toContain('Commit: af300a5 Version: release-version-25.4.183');
+      mod.revert();
+    });
+
+    it('links the main build release to the knowledge base', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
+        detail: { data: sampleData, error: null },
+      }));
+      const link = document.querySelector('#cplace-system-info-dialog .cplace-si-dl a');
+      expect(link).not.toBeNull();
+      expect(link.textContent).toBe('25.4');
+      expect(link.href).toBe('https://kb.cplace.com/release-information/readme/25-4');
+      mod.revert();
+    });
+
+    it('highlights rows where the change set has no release-version tag', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
+        detail: { data: sampleData, error: null },
+      }));
+      const rows = document.querySelectorAll('#cplace-system-info-dialog .cplace-si-table tbody tr');
+      expect(rows[0].classList.contains('cplace-si-row-warn')).toBe(false);
+      expect(rows[1].classList.contains('cplace-si-row-warn')).toBe(true);
       mod.revert();
     });
 

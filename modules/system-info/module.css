@@ -113,6 +113,12 @@
 #cplace-system-info-dialog .cplace-si-table tbody tr:nth-child(even) {
   background: #fafafa;
 }
+#cplace-system-info-dialog .cplace-si-table tbody tr.cplace-si-row-warn {
+  background: #fefce8;
+}
+#cplace-system-info-dialog .cplace-si-table tbody tr.cplace-si-row-warn:nth-child(even) {
+  background: #fef9c3;
+}
 #cplace-system-info-dialog .cplace-si-links {
   display: flex;
   gap: 12px;
