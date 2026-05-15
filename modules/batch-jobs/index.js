@@ -48,32 +48,32 @@ function parseRows(rows) {
   for (const row of rows) {
     try {
       const doc = new DOMParser().parseFromString(`<table>${row.html}</table>`, 'text/html');
-      const tds = doc.querySelectorAll('td[cplace-control]');
+      const wrappers = doc.querySelectorAll('[cplace-control]');
       let name = '';
       let linkHref = '';
       let startedAt = null;
       let status = null;
       let durationMs = null;
-      for (const td of tds) {
+      for (const w of wrappers) {
         let ctrl;
-        try { ctrl = JSON.parse(td.getAttribute('cplace-control')); } catch { continue; }
+        try { ctrl = JSON.parse(w.getAttribute('cplace-control')); } catch { continue; }
         switch (ctrl.name) {
           case 'name': {
             name = typeof ctrl.value === 'string' ? ctrl.value : '';
-            const a = td.querySelector('a.assetLink');
+            const a = w.querySelector('a.assetLink') || w.querySelector('a[href]');
             if (a) linkHref = a.getAttribute('href') || '';
             break;
           }
           case 'startedAt': {
-            const ts = td.querySelector('cplace-timestamp');
+            const ts = w.querySelector('cplace-timestamp');
             const raw = ts && ts.getAttribute('timestamp');
             const n = raw ? parseInt(raw, 10) : NaN;
             startedAt = Number.isNaN(n) ? null : n;
             break;
           }
           case 'state': {
-            const el = td.querySelector('[data-status]');
-            status = el ? el.getAttribute('data-status') : (ctrl.value ?? null);
+            const el = w.querySelector('[data-status]');
+            status = el ? el.getAttribute('data-status') : (typeof ctrl.value === 'string' ? ctrl.value : null);
             break;
           }
           case 'duration': {
@@ -83,7 +83,7 @@ function parseRows(rows) {
           }
         }
       }
-      const id = (row.id || '').replace('persistentJob_', '');
+      const id = (row.id || '').replace(/^persistentJob_/, '');
       jobs.push({ id, name: name || id, linkHref, startedAt, status, durationMs });
     } catch { /* skip malformed row */ }
   }

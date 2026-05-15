@@ -19,19 +19,33 @@ async function loadMod() {
 
 function rowHtml({ name, href, startedAt, state, duration }) {
   return `
-    <tr>
-      <td cplace-control='${JSON.stringify({ name: 'name', value: name })}'>
-        <a class="assetLink" href="${href}">${name}</a>
+    <tr class="">
+      <td cplace-flexi-cell>
+        <div cplace-slidable-action>
+          <div class="cplace-control-wrapper" cplace-control='${JSON.stringify({ name: 'name', value: name })}'>
+            <a class="assetLink" href="${href}">${name}</a>
+          </div>
+        </div>
       </td>
-      <td cplace-control='${JSON.stringify({ name: 'createdAt' })}'></td>
-      <td cplace-control='${JSON.stringify({ name: 'createdBy' })}'></td>
-      <td cplace-control='${JSON.stringify({ name: 'startedAt' })}'>
-        ${startedAt != null ? `<cplace-timestamp timestamp="${startedAt}"></cplace-timestamp>` : ''}
+      <td cplace-flexi-cell>
+        <div class="cplace-control-wrapper" cplace-control='${JSON.stringify({ name: 'createdAt' })}'></div>
       </td>
-      <td cplace-control='${JSON.stringify({ name: 'state', value: state })}'>
-        <span data-status="${state}">${state}</span>
+      <td cplace-flexi-cell>
+        <div class="cplace-control-wrapper" cplace-control='${JSON.stringify({ name: 'createdBy' })}'></div>
       </td>
-      <td cplace-control='${JSON.stringify({ name: 'duration', value: String(duration) })}'></td>
+      <td cplace-flexi-cell>
+        <div class="cplace-control-wrapper" cplace-control='${JSON.stringify({ name: 'startedAt' })}'>
+          ${startedAt != null ? `<cplace-timestamp timestamp="${startedAt}"></cplace-timestamp>` : ''}
+        </div>
+      </td>
+      <td cplace-flexi-cell>
+        <div class="cplace-control-wrapper" cplace-control='${JSON.stringify({ name: 'state', value: state })}'>
+          <span data-status="${state}">${state}</span>
+        </div>
+      </td>
+      <td cplace-flexi-cell>
+        <div class="cplace-control-wrapper" cplace-control='${JSON.stringify({ name: 'duration', value: String(duration) })}'></div>
+      </td>
     </tr>
   `;
 }
