@@ -245,7 +245,7 @@ describe('batch-jobs module', () => {
       mod.revert();
     });
 
-    it('caps the rendered list at 10 jobs', async () => {
+    it('caps the rendered list at 10 jobs by default', async () => {
       const mod = await loadMod();
       mod.apply();
 
@@ -268,6 +268,35 @@ describe('batch-jobs module', () => {
 
       const items = document.querySelectorAll('.cplace-bj-list li');
       expect(items.length).toBe(10);
+
+      mod.revert();
+    });
+
+    it('respects a custom limitJobs option', async () => {
+      const mod = await loadMod();
+      mod.apply({ limitJobs: 5 });
+
+      const rows = [];
+      for (let i = 0; i < 12; i++) {
+        rows.push({
+          id: `persistentJob_job${i}`,
+          html: rowHtml({
+            name: `Job ${i}`, href: `/training/batchJob/view?id=job${i}`,
+            startedAt: Date.now() - i * 1000, state: 'success', duration: 100 + i,
+          }),
+        });
+      }
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: { rows, total: rows.length, tenantPath: '/training/' },
+      }));
+
+      const badge = document.querySelector('.cplace-bj-badge');
+      expect(badge.textContent).toBe('Latest 5 Batch jobs ▾');
+
+      badge.click();
+      const items = document.querySelectorAll('.cplace-bj-list li');
+      expect(items.length).toBe(5);
 
       mod.revert();
     });

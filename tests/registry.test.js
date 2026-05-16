@@ -42,4 +42,26 @@ describe('registry', () => {
       expect(map['admin-access-highlight']).toBe(false);
     });
   });
+
+  describe('defaultOptionsMap()', () => {
+    it('only includes modules that declare options', () => {
+      const map = registry.defaultOptionsMap();
+      expect(Object.hasOwn(map, 'admin-access-highlight')).toBe(false);
+    });
+
+    it('includes batch-jobs with its default option values', () => {
+      const map = registry.defaultOptionsMap();
+      expect(map['batch-jobs']).toEqual({ limitJobs: 10 });
+    });
+
+    it('uses opt.default as the value for each option', () => {
+      const map = registry.defaultOptionsMap();
+      for (const mod of registry.all()) {
+        if (!Array.isArray(mod.options) || mod.options.length === 0) continue;
+        for (const opt of mod.options) {
+          expect(map[mod.id][opt.id]).toBe(opt.default);
+        }
+      }
+    });
+  });
 });

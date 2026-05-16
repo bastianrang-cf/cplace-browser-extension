@@ -44,12 +44,30 @@ describe('background — onInstalled', () => {
   it('does not call storage.set when all keys already exist', async () => {
     await fakeBrowser.storage.local.set({
       enabledModules: { 'admin-access-highlight': true, 'batch-jobs': false, 'language-switcher': false, 'system-info': false, 'version-badge': true },
+      moduleOptions: { 'batch-jobs': { limitJobs: 10 } },
     });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');
     await loadBackground();
     await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
 
     expect(setSpy).not.toHaveBeenCalled();
+  });
+
+  it('seeds moduleOptions with defaults on fresh install', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'install' });
+
+    const stored = await fakeBrowser.storage.local.get('moduleOptions');
+    expect(stored.moduleOptions).toMatchObject({ 'batch-jobs': { limitJobs: 10 } });
+  });
+
+  it('fills in missing option keys without overwriting existing ones', async () => {
+    await fakeBrowser.storage.local.set({ moduleOptions: { 'batch-jobs': { limitJobs: 5 } } });
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    const stored = await fakeBrowser.storage.local.get('moduleOptions');
+    expect(stored.moduleOptions['batch-jobs'].limitJobs).toBe(5);
   });
 });
 
@@ -217,5 +235,21 @@ describe('background — onMessage: cplace:moduleToggle', () => {
 
     expect(fakeBrowser.tabs.sendMessage).toHaveBeenCalledTimes(1);
     expect(fakeBrowser.tabs.sendMessage).toHaveBeenCalledWith(5, msg);
+  });
+});
+
+describe('background — onMessage: cplace:moduleOptions', () => {
+  it('relays the options message to all tabs', async () => {
+    await fakeBrowser.tabs.create({ url: 'https://example.com' });
+    await loadBackground();
+
+    const msg = { type: 'cplace:moduleOptions', id: 'batch-jobs', options: { limitJobs: 5 } };
+    await fakeBrowser.runtime.onMessage.trigger(msg, {});
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fakeBrowser.tabs.sendMessage).toHaveBeenCalledWith(
+      expect.any(Number),
+      msg,
+    );
   });
 });
