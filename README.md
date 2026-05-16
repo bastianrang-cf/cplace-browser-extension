@@ -6,7 +6,7 @@
 
 A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions.
 
-**Core behavior:** detects whether the current page is a cplace application (by the presence of `id="cplace"` in the DOM) and switches the toolbar icon between a colored **c** (detected) and a greyscale icon (not detected). Optional behaviors are implemented as toggleable **modules**.
+**Core behavior:** detects whether the current page is a cplace application (by the presence of `id="cplace"` in the DOM) and enables the toolbar icon on cplace pages (disabling/greying it out on all other pages). Optional behaviors are implemented as toggleable **modules**.
 
 ---
 
@@ -44,10 +44,9 @@ Enable or disable modules on the **Options** page (`chrome://extensions` → cpl
 
 ```bash
 npm install            # install dev dependencies
-npm run build:icons    # regenerate public/icons/ PNGs from icons/source.svg
 npm run dev            # dev build with HMR — load .output/chrome-mv3/ as unpacked
 npm run build          # production build
-npm run package        # build icons + zip for all targets (Chrome, Firefox, Safari)
+npm run package        # zip for all targets (Chrome, Firefox, Safari)
 npm test               # run the Vitest test suite
 npm run test:watch     # run tests in watch mode
 ```

@@ -9,7 +9,8 @@ async function loadBackground() {
 
 beforeEach(async () => {
   fakeBrowser.reset();
-  vi.spyOn(fakeBrowser.action, 'setIcon').mockResolvedValue(undefined);
+  vi.spyOn(fakeBrowser.action, 'enable').mockResolvedValue(undefined);
+  vi.spyOn(fakeBrowser.action, 'disable').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.action, 'setPopup').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.action, 'setTitle').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.action, 'setBadgeText').mockResolvedValue(undefined);
@@ -54,30 +55,26 @@ describe('background — onInstalled', () => {
 });
 
 describe('background — onMessage: cplace:status', () => {
-  it('sets color icon and enables popup when found is true', async () => {
+  it('enables action and sets popup when found is true', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:status', found: true },
       { tab: { id: 42 } },
     );
 
-    expect(fakeBrowser.action.setIcon).toHaveBeenCalledWith(
-      expect.objectContaining({ tabId: 42, path: expect.objectContaining({ 16: 'icons/color-16.png' }) }),
-    );
+    expect(fakeBrowser.action.enable).toHaveBeenCalledWith(42);
     expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 42, popup: 'popup.html' });
   });
 
-  it('sets gray icon and disables popup when found is false', async () => {
+  it('disables action when found is false', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:status', found: false },
       { tab: { id: 7 } },
     );
 
-    expect(fakeBrowser.action.setIcon).toHaveBeenCalledWith(
-      expect.objectContaining({ tabId: 7, path: expect.objectContaining({ 16: 'icons/gray-16.png' }) }),
-    );
-    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 7, popup: '' });
+    expect(fakeBrowser.action.disable).toHaveBeenCalledWith(7);
+    expect(fakeBrowser.action.setPopup).not.toHaveBeenCalled();
   });
 
   it('resets title and badge when found is false', async () => {
@@ -102,14 +99,14 @@ describe('background — onMessage: cplace:status', () => {
     expect(fakeBrowser.action.setBadgeText).not.toHaveBeenCalled();
   });
 
-  it('does not call setIcon or setPopup when sender has no tab', async () => {
+  it('does not call enable or setPopup when sender has no tab', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:status', found: true },
       {},
     );
 
-    expect(fakeBrowser.action.setIcon).not.toHaveBeenCalled();
+    expect(fakeBrowser.action.enable).not.toHaveBeenCalled();
     expect(fakeBrowser.action.setPopup).not.toHaveBeenCalled();
   });
 
@@ -117,7 +114,8 @@ describe('background — onMessage: cplace:status', () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(null, {});
 
-    expect(fakeBrowser.action.setIcon).not.toHaveBeenCalled();
+    expect(fakeBrowser.action.enable).not.toHaveBeenCalled();
+    expect(fakeBrowser.action.disable).not.toHaveBeenCalled();
   });
 });
 
