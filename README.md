@@ -1,6 +1,6 @@
 # cplace browser extension
 
-[![Version](https://img.shields.io/badge/version-0.10.0-blue)](CHANGELOG.md) <!-- x-release-please-version -->
+[![Version](https://img.shields.io/badge/version-0.11.0)](CHANGELOG.md) <!-- x-release-please-version -->
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![CI](https://github.com/bastianrang-cf/cplace-browser-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/bastianrang-cf/cplace-browser-extension/actions/workflows/ci.yml)
 

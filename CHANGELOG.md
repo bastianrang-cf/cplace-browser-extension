@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.11.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.10.0...v0.11.0) (2026-05-16)
+
+
+### Features
+
+* modules can register typed options displayed in the options page ([#50](https://github.com/bastianrang-cf/cplace-browser-extension/issues/50)) ([23cb989](https://github.com/bastianrang-cf/cplace-browser-extension/commit/23cb989e644a3b9d4b6a2633d34edec3bc207fbb)), closes [#43](https://github.com/bastianrang-cf/cplace-browser-extension/issues/43)
+
+
+### Bug Fixes
+
+* add missing color to version badge URL in README ([#48](https://github.com/bastianrang-cf/cplace-browser-extension/issues/48)) ([3afd154](https://github.com/bastianrang-cf/cplace-browser-extension/commit/3afd1542186ad7da0d16e303c06f6fb583d22fc3))
+* **batch-jobs:** pause polling on hidden tabs, configurable interval, red error state ([#53](https://github.com/bastianrang-cf/cplace-browser-extension/issues/53)) ([7225482](https://github.com/bastianrang-cf/cplace-browser-extension/commit/7225482e7316d7c4efe8e6d0d3b0aa2d8a1653ae))
+* restore PNG icon generation to fix Chrome icon load error ([#52](https://github.com/bastianrang-cf/cplace-browser-extension/issues/52)) ([ae9fe33](https://github.com/bastianrang-cf/cplace-browser-extension/commit/ae9fe3310478e1846c9574e0ea8d22e1c1126803))
+
 ## [0.10.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.9.1...v0.10.0) (2026-05-16)
 
 
