@@ -3,19 +3,6 @@ import { registry } from '../modules/registry.js';
 
 const STORAGE_KEY = 'enabledModules';
 
-const COLOR_ICON = {
-  16: 'icons/color-16.png',
-  32: 'icons/color-32.png',
-  48: 'icons/color-48.png',
-  128: 'icons/color-128.png',
-};
-const GRAY_ICON = {
-  16: 'icons/gray-16.png',
-  32: 'icons/gray-32.png',
-  48: 'icons/gray-48.png',
-  128: 'icons/gray-128.png',
-};
-
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(async () => {
     const defaults = registry.defaultEnabledMap();
@@ -36,9 +23,11 @@ export default defineBackground(() => {
 
     if (msg.type === 'cplace:status' && sender.tab && sender.tab.id != null) {
       const tabId = sender.tab.id;
-      browser.action.setIcon({ tabId, path: msg.found ? COLOR_ICON : GRAY_ICON });
-      browser.action.setPopup({ tabId, popup: msg.found ? 'popup.html' : '' });
-      if (!msg.found) {
+      if (msg.found) {
+        browser.action.enable(tabId);
+        browser.action.setPopup({ tabId, popup: 'popup.html' });
+      } else {
+        browser.action.disable(tabId);
         browser.action.setTitle({ tabId, title: 'cplace' });
         browser.action.setBadgeText({ tabId, text: '' });
       }
