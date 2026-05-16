@@ -51,7 +51,7 @@ describe('registry', () => {
 
     it('includes batch-jobs with its default option values', () => {
       const map = registry.defaultOptionsMap();
-      expect(map['batch-jobs']).toEqual({ limitJobs: 10 });
+      expect(map['batch-jobs']).toEqual({ limitJobs: 10, pollInterval: 60 });
     });
 
     it('uses opt.default as the value for each option', () => {
