@@ -127,3 +127,14 @@
 #cplace-batch-jobs-panel .cplace-bj-status--cancelled { color: #6b7280; }
 #cplace-batch-jobs-panel .cplace-bj-status--skipped   { color: #9ca3af; }
 #cplace-batch-jobs-panel .cplace-bj-status--created   { color: #9ca3af; }
+#cplace-batch-jobs-panel .cplace-bj-error {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #dc2626;
+  color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  white-space: nowrap;
+  font-weight: 600;
+}

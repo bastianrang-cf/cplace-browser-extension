@@ -76,6 +76,40 @@ describe('batch-jobs module', () => {
       expect(vi.getTimerCount()).toBe(2);
       mod.revert();
     });
+
+    it('does not start polling interval when tab is hidden', async () => {
+      vi.useFakeTimers();
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      const mod = await loadMod();
+      mod.apply();
+      expect(vi.getTimerCount()).toBe(1); // only tickId (elapsed counter), no polling interval
+      mod.revert();
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    });
+
+    it('starts polling when tab becomes visible after hidden apply', async () => {
+      vi.useFakeTimers();
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      const mod = await loadMod();
+      mod.apply();
+      expect(vi.getTimerCount()).toBe(1);
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(vi.getTimerCount()).toBe(2); // polling interval added
+      mod.revert();
+    });
+
+    it('stops polling interval when tab becomes hidden', async () => {
+      vi.useFakeTimers();
+      const mod = await loadMod();
+      mod.apply();
+      expect(vi.getTimerCount()).toBe(2);
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(vi.getTimerCount()).toBe(1); // only elapsed counter remains
+      mod.revert();
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    });
   });
 
   describe('revert()', () => {
@@ -268,6 +302,51 @@ describe('batch-jobs module', () => {
 
       const items = document.querySelectorAll('.cplace-bj-list li');
       expect(items.length).toBe(10);
+
+      mod.revert();
+    });
+
+    it('shows red error element when result contains an error', async () => {
+      const mod = await loadMod();
+      mod.apply();
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: { error: '503 Service Unavailable', rows: [], total: 0, tenantPath: '' },
+      }));
+
+      const panel = document.getElementById('cplace-batch-jobs-panel');
+      expect(panel).not.toBeNull();
+      const errorEl = panel.querySelector('.cplace-bj-error');
+      expect(errorEl).not.toBeNull();
+      expect(errorEl.textContent).toContain('503 Service Unavailable');
+
+      mod.revert();
+    });
+
+    it('replaces error element with normal panel on successful result', async () => {
+      const mod = await loadMod();
+      mod.apply();
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: { error: 'Network error', rows: [], total: 0, tenantPath: '' },
+      }));
+      expect(document.querySelector('.cplace-bj-error')).not.toBeNull();
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: {
+          rows: [{
+            id: 'persistentJob_abc',
+            html: rowHtml({
+              name: 'Test Job', href: '/training/batchJob/view?id=abc',
+              startedAt: Date.now() - 1000, state: 'running', duration: 0,
+            }),
+          }],
+          total: 1, tenantPath: '/training/',
+        },
+      }));
+
+      expect(document.querySelector('.cplace-bj-error')).toBeNull();
+      expect(document.querySelector('.cplace-bj-badge')).not.toBeNull();
 
       mod.revert();
     });

@@ -43,8 +43,10 @@
         }));
       },
       error: function (xhr, status, err) {
-        console.error('[cplace batch-jobs]', xhr.status, err);
-        document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', { detail: { rows: [], total: 0, tenantPath: '' } }));
+        var msg = xhr.status ? (xhr.status + ' ' + (err || status)) : (err || status || 'Network error');
+        document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+          detail: { error: msg, rows: [], total: 0, tenantPath: '' },
+        }));
       },
     });
   });

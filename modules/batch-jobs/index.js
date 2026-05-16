@@ -1,13 +1,26 @@
 const PANEL_ID = 'cplace-batch-jobs-panel';
-const POLL_MS  = 15_000;
 
-let intervalId = null;
-let tickId     = null;
-let expanded   = false;
-let jobLimit   = 10;
+let intervalId        = null;
+let tickId            = null;
+let expanded          = false;
+let jobLimit          = 10;
+let pollMs            = 60_000;
+let applied           = false;
+let visibilityHandler = null;
 
 function fetchRunningJobs() {
   document.dispatchEvent(new CustomEvent('cplace:fetchBatchJobs'));
+}
+
+function startPolling() {
+  if (intervalId) return;
+  fetchRunningJobs();
+  intervalId = setInterval(fetchRunningJobs, pollMs);
+}
+
+function stopPolling() {
+  clearInterval(intervalId);
+  intervalId = null;
 }
 
 function formatElapsed(ms) {
@@ -210,44 +223,64 @@ function renderPanel(jobs, tenantPath = '') {
   }
 }
 
-function onResult(event) {
-  const { rows = [], tenantPath = '' } = event.detail || {};
-  renderPanel(parseRows(rows).slice(0, jobLimit), tenantPath);
+function renderError(msg) {
+  let panel = document.getElementById(PANEL_ID);
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = PANEL_ID;
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = '';
+  const el = document.createElement('div');
+  el.className = 'cplace-bj-error';
+  el.textContent = '⚠ ' + msg;
+  panel.appendChild(el);
 }
 
-let tickFn = null;
+function onResult(event) {
+  const { rows = [], tenantPath = '', error } = event.detail || {};
+  if (error) {
+    renderError(error);
+    return;
+  }
+  renderPanel(parseRows(rows).slice(0, jobLimit), tenantPath);
+}
 
 export default {
   id: 'batch-jobs',
   name: 'Batch Jobs overlay',
-  description: 'Shows a live overlay of running batch jobs on every cplace page. Polls every 15 s while the tab is visible.',
+  description: 'Shows a live overlay of running batch jobs on every cplace page. Polls while the tab is visible; shows a red error indicator on connection failure.',
   defaultEnabled: false,
   css: true,
   pageScript: true,
   options: [
-    { id: 'limitJobs', label: 'Limit latest jobs', type: 'number', default: 10 },
+    { id: 'limitJobs',    label: 'Limit latest jobs',   type: 'number', default: 10 },
+    { id: 'pollInterval', label: 'Poll interval (s)',    type: 'number', default: 60 },
   ],
   apply(options = {}) {
-    jobLimit = typeof options.limitJobs === 'number' ? options.limitJobs : 10;
-    if (intervalId) return;
+    jobLimit = typeof options.limitJobs    === 'number' ? options.limitJobs   : 10;
+    pollMs   = typeof options.pollInterval === 'number' && options.pollInterval > 0
+               ? options.pollInterval * 1000 : 60_000;
+    if (applied) return;
+    applied = true;
     document.addEventListener('cplace:batchJobsResult', onResult);
-    tickFn = () => {
-      if (document.visibilityState === 'visible') fetchRunningJobs();
+    visibilityHandler = () => {
+      if (document.visibilityState === 'visible') startPolling();
+      else stopPolling();
     };
-    tickFn();
-    intervalId = setInterval(tickFn, POLL_MS);
-    document.addEventListener('visibilitychange', tickFn);
+    document.addEventListener('visibilitychange', visibilityHandler);
+    if (document.visibilityState === 'visible') startPolling();
     tickId = setInterval(updateElapsedCounters, 1_000);
   },
   revert() {
-    clearInterval(intervalId);
+    stopPolling();
     clearInterval(tickId);
-    intervalId = null;
     tickId = null;
+    applied = false;
     document.removeEventListener('cplace:batchJobsResult', onResult);
-    if (tickFn) {
-      document.removeEventListener('visibilitychange', tickFn);
-      tickFn = null;
+    if (visibilityHandler) {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      visibilityHandler = null;
     }
     document.getElementById(PANEL_ID)?.remove();
     expanded = false;
