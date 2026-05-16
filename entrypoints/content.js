@@ -3,6 +3,7 @@ import { registry } from '../modules/registry.js';
 import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../modules/utils.js';
 
 const STORAGE_KEY = 'enabledModules';
+const OPTIONS_KEY = 'moduleOptions';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -10,6 +11,7 @@ export default defineContentScript({
   main() {
     const activeModules = new Set();
     let lastVersionInfo = null;
+    let moduleOptions = {};
 
     function getEnabledMap(stored) {
       const defaults = registry.defaultEnabledMap();
@@ -32,7 +34,7 @@ export default defineContentScript({
         try {
           if (mod.css) injectModuleCSS(mod.id);
           if (mod.pageScript) injectPageScript(mod.id);
-          mod.apply?.();
+          mod.apply?.(moduleOptions[id] || {});
           activeModules.add(id);
         } catch (e) {
           console.warn('[cplace] module apply failed:', id, e);
@@ -103,7 +105,8 @@ export default defineContentScript({
 
     // --- Module runtime ---
 
-    browser.storage.local.get(STORAGE_KEY).then((data) => {
+    browser.storage.local.get([STORAGE_KEY, OPTIONS_KEY]).then((data) => {
+      moduleOptions = data[OPTIONS_KEY] || {};
       applyAll(data[STORAGE_KEY]);
     });
 
@@ -111,6 +114,19 @@ export default defineContentScript({
       if (!msg) return;
       if (msg.type === 'cplace:moduleToggle') {
         applyModuleState(msg.id, !!msg.enabled);
+        return;
+      }
+      if (msg.type === 'cplace:moduleOptions') {
+        moduleOptions[msg.id] = msg.options || {};
+        if (activeModules.has(msg.id)) {
+          const mod = registry.byId(msg.id);
+          try {
+            mod?.revert?.();
+            mod?.apply?.(moduleOptions[msg.id]);
+          } catch (e) {
+            console.warn('[cplace] module options update failed:', msg.id, e);
+          }
+        }
         return;
       }
       if (msg.type === 'cplace:moduleAction') {

@@ -21,4 +21,13 @@ export const registry = {
     for (const m of modules) out[m.id] = !!m.defaultEnabled;
     return out;
   },
+  defaultOptionsMap() {
+    const out = {};
+    for (const m of modules) {
+      if (!Array.isArray(m.options) || m.options.length === 0) continue;
+      out[m.id] = {};
+      for (const opt of m.options) out[m.id][opt.id] = opt.default;
+    }
+    return out;
+  },
 };

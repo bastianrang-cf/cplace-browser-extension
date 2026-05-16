@@ -4,6 +4,7 @@ const POLL_MS  = 15_000;
 let intervalId = null;
 let tickId     = null;
 let expanded   = false;
+let jobLimit   = 10;
 
 function fetchRunningJobs() {
   document.dispatchEvent(new CustomEvent('cplace:fetchBatchJobs'));
@@ -116,7 +117,7 @@ function renderPanel(jobs, tenantPath = '') {
   if (!expanded) {
     const badge = document.createElement('button');
     badge.className = 'cplace-bj-badge';
-    badge.textContent = 'Latest 10 Batch jobs ▾';
+    badge.textContent = `Latest ${jobLimit} Batch jobs ▾`;
     badge.addEventListener('click', () => {
       expanded = true;
       renderPanel(jobs, tenantPath);
@@ -137,7 +138,7 @@ function renderPanel(jobs, tenantPath = '') {
     } else {
       title = document.createElement('span');
     }
-    title.textContent = 'Latest 10 Batch jobs';
+    title.textContent = `Latest ${jobLimit} Batch jobs`;
     const closeBtn = document.createElement('button');
     closeBtn.className = 'cplace-bj-close';
     closeBtn.textContent = '✕';
@@ -211,7 +212,7 @@ function renderPanel(jobs, tenantPath = '') {
 
 function onResult(event) {
   const { rows = [], tenantPath = '' } = event.detail || {};
-  renderPanel(parseRows(rows).slice(0, 10), tenantPath);
+  renderPanel(parseRows(rows).slice(0, jobLimit), tenantPath);
 }
 
 let tickFn = null;
@@ -223,7 +224,11 @@ export default {
   defaultEnabled: false,
   css: true,
   pageScript: true,
-  apply() {
+  options: [
+    { id: 'limitJobs', label: 'Limit latest jobs', type: 'number', default: 10 },
+  ],
+  apply(options = {}) {
+    jobLimit = typeof options.limitJobs === 'number' ? options.limitJobs : 10;
     if (intervalId) return;
     document.addEventListener('cplace:batchJobsResult', onResult);
     tickFn = () => {

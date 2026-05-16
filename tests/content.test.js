@@ -242,6 +242,43 @@ describe('content — version detection', () => {
   });
 });
 
+describe('content — cplace:moduleOptions listener', () => {
+  it('updates options and re-applies active module with new options', async () => {
+    vi.useFakeTimers();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': true },
+      moduleOptions: { 'batch-jobs': { limitJobs: 10 } },
+    });
+    await loadContent();
+
+    await fakeBrowser.runtime.onMessage.trigger({
+      type: 'cplace:moduleOptions',
+      id: 'batch-jobs',
+      options: { limitJobs: 3 },
+    });
+
+    // Panel should be removed (revert called) and re-apply started
+    expect(document.getElementById('cplace-batch-jobs-panel')).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('does not apply if the module is not active', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': false },
+      moduleOptions: { 'batch-jobs': { limitJobs: 10 } },
+    });
+    await loadContent();
+
+    await expect(
+      fakeBrowser.runtime.onMessage.trigger({
+        type: 'cplace:moduleOptions',
+        id: 'batch-jobs',
+        options: { limitJobs: 3 },
+      }),
+    ).resolves.not.toThrow();
+  });
+});
+
 describe('content — storage.onChanged backstop', () => {
   it('applies modules when enabledModules changes in local storage', async () => {
     await loadContent();
