@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.9.1...v0.10.0) (2026-05-16)
+
+
+### Features
+
+* use SVG as default_icon and enable/disable per tab ([#47](https://github.com/bastianrang-cf/cplace-browser-extension/issues/47)) ([5b8f14a](https://github.com/bastianrang-cf/cplace-browser-extension/commit/5b8f14a9cfca40d15c73e6b9ccb35a99df29a839)), closes [#46](https://github.com/bastianrang-cf/cplace-browser-extension/issues/46)
+
+
+### Bug Fixes
+
+* **batch-jobs:** show workspace name from job title instead of tenant path ([#42](https://github.com/bastianrang-cf/cplace-browser-extension/issues/42)) ([58767b3](https://github.com/bastianrang-cf/cplace-browser-extension/commit/58767b39a8f78bc07785c8833c7ff68041e0d8e3)), closes [#41](https://github.com/bastianrang-cf/cplace-browser-extension/issues/41)
+
 ## [0.9.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.9.0...v0.9.1) (2026-05-15)
 
 
