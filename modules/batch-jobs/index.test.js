@@ -207,7 +207,7 @@ describe('batch-jobs module', () => {
         detail: {
           rows: [
             { id: 'persistentJob_done1', html: rowHtml({
-              name: 'Finished Job', href: '/training/batchJob/view?id=done1',
+              name: 'Low-Code Job "doSomething" (Workspace "Citizen Agentic Innovation Space")', href: '/training/batchJob/view?id=done1',
               startedAt: Date.now() - 60_000, state: 'success', duration: 1500,
             }) },
             { id: 'persistentJob_run1', html: rowHtml({
@@ -224,11 +224,12 @@ describe('batch-jobs module', () => {
       const items = document.querySelectorAll('.cplace-bj-list li');
       expect(items.length).toBe(2);
 
+      const fullName = 'Low-Code Job "doSomething" (Workspace "Citizen Agentic Innovation Space")';
       expect(items[0].querySelector('.cplace-bj-status--success')).not.toBeNull();
-      expect(items[0].querySelector('a').textContent).toBe('Finished Job');
+      expect(items[0].querySelector('a').textContent).toBe(fullName);
       expect(items[0].querySelector('a').getAttribute('href')).toBe('/training/batchJob/view?id=done1');
-      expect(items[0].querySelector('a').getAttribute('title')).toBe('Finished Job');
-      expect(items[0].querySelector('.cplace-bj-workspace').textContent).toBe('training');
+      expect(items[0].querySelector('a').getAttribute('title')).toBe(fullName);
+      expect(items[0].querySelector('.cplace-bj-workspace').textContent).toBe('Citizen Agentic Innovation Space');
       expect(items[0].querySelector('.cplace-bj-started-at')).not.toBeNull();
       expect(items[0].querySelector('.cplace-bj-elapsed').textContent).toBe('1.5 s');
 

@@ -90,7 +90,9 @@ function parseRows(rows) {
         }
       }
       const id = (row.id || '').replace(/^persistentJob_/, '');
-      jobs.push({ id, name: name || id, linkHref, startedAt, status, durationMs });
+      const workspaceMatch = name.match(/\(Workspace "([^"]+)"\)/);
+      const workspace = workspaceMatch ? workspaceMatch[1] : '';
+      jobs.push({ id, name: name || id, linkHref, startedAt, status, durationMs, workspace });
     } catch { /* skip malformed row */ }
   }
   return jobs;
@@ -110,8 +112,6 @@ function renderPanel(jobs, tenantPath = '') {
   }
 
   panel.innerHTML = '';
-
-  const workspace = (tenantPath || '').split('/').filter(Boolean)[0] || '';
 
   if (!expanded) {
     const badge = document.createElement('button');
@@ -171,7 +171,7 @@ function renderPanel(jobs, tenantPath = '') {
 
       const workspaceEl = document.createElement('small');
       workspaceEl.className = 'cplace-bj-workspace';
-      workspaceEl.textContent = workspace;
+      workspaceEl.textContent = job.workspace;
 
       jobInfo.appendChild(a);
       jobInfo.appendChild(workspaceEl);
