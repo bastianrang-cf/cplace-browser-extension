@@ -37,11 +37,19 @@ export default defineConfig({
     description: 'Detects cplace pages and offers optional modules for cplace solutions.',
     permissions: ['storage'],
     icons: {
-      128: 'icons/source.svg',
+      16: 'icons/icon-16.png',
+      32: 'icons/icon-32.png',
+      48: 'icons/icon-48.png',
+      128: 'icons/icon-128.png',
     },
     action: {
       default_title: 'cplace',
-      default_icon: 'icons/source.svg',
+      default_icon: {
+        16: 'icons/icon-16.png',
+        32: 'icons/icon-32.png',
+        48: 'icons/icon-48.png',
+        128: 'icons/icon-128.png',
+      },
     },
     web_accessible_resources: [
       { resources: ['*-page.js', '*-module.css'], matches: ['<all_urls>'] },
