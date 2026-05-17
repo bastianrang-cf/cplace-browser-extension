@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.11.0...v0.12.0) (2026-05-17)
+
+
+### Features
+
+* add optional icon support to popup action buttons ([#54](https://github.com/bastianrang-cf/cplace-browser-extension/issues/54)) ([bac3b5d](https://github.com/bastianrang-cf/cplace-browser-extension/commit/bac3b5d34845ccde9c595a5333c3cae236c396da)), closes [#45](https://github.com/bastianrang-cf/cplace-browser-extension/issues/45)
+
 ## [0.11.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.10.0...v0.11.0) (2026-05-16)
 
 
