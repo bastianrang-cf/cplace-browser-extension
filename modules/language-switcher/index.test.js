@@ -16,6 +16,12 @@ describe('language-switcher module', () => {
     );
   });
 
+  it('switch-language action has a string icon', () => {
+    const action = mod.actions.find((a) => a.id === 'switch-language');
+    expect(typeof action.icon).toBe('string');
+    expect(action.icon.length).toBeGreaterThan(0);
+  });
+
   it('has pageScript flag set', () => {
     expect(mod.pageScript).toBe(true);
   });

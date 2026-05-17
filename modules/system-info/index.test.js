@@ -45,7 +45,14 @@ describe('system-info module', () => {
 
   it('declares the System Info popup action', async () => {
     const mod = await loadMod();
-    expect(mod.actions).toEqual([{ id: 'show-system-info', label: 'System Info' }]);
+    expect(mod.actions).toEqual([{ id: 'show-system-info', label: 'System Info', icon: 'ℹ️' }]);
+  });
+
+  it('show-system-info action has a string icon', async () => {
+    const mod = await loadMod();
+    const action = mod.actions.find((a) => a.id === 'show-system-info');
+    expect(typeof action.icon).toBe('string');
+    expect(action.icon.length).toBeGreaterThan(0);
   });
 
   describe('onAction', () => {

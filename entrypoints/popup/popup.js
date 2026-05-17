@@ -25,7 +25,24 @@ async function init() {
 
   for (const { moduleId, action } of actionItems) {
     const btn = document.createElement('button');
-    btn.textContent = action.label;
+    if (action.icon) {
+      const isImageIcon = /\.(svg|png)$/i.test(action.icon);
+      const iconEl = isImageIcon
+        ? Object.assign(document.createElement('img'), {
+            src: browser.runtime.getURL(`${moduleId}-${action.icon}`),
+            alt: '',
+            className: 'btn-icon',
+          })
+        : Object.assign(document.createElement('span'), {
+            textContent: action.icon,
+            className: 'btn-icon',
+          });
+      if (!isImageIcon) iconEl.setAttribute('aria-hidden', 'true');
+      btn.appendChild(iconEl);
+    }
+    const labelEl = document.createElement('span');
+    labelEl.textContent = action.label;
+    btn.appendChild(labelEl);
     btn.addEventListener('click', async () => {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab?.id != null) {
