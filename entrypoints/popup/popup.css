@@ -18,6 +18,9 @@ body {
 }
 
 button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   padding: 8px 12px;
   background: color-mix(in srgb, CanvasText 8%, transparent);
@@ -27,6 +30,17 @@ button {
   font-size: 14px;
   text-align: left;
   cursor: pointer;
+}
+
+.btn-icon {
+  flex-shrink: 0;
+  line-height: 1;
+  font-size: 1em;
+}
+
+img.btn-icon {
+  width: 16px;
+  height: 16px;
 }
 
 button:hover {

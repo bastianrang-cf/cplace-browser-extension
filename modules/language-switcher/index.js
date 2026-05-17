@@ -4,7 +4,7 @@ export default {
   description: 'Switch the cplace display language via the extension popup.',
   defaultEnabled: false,
   pageScript: true,
-  actions: [{ id: 'switch-language', label: 'Switch language' }],
+  actions: [{ id: 'switch-language', label: 'Switch language', icon: '🌐' }],
   onAction(actionId) {
     if (actionId === 'switch-language') {
       document.dispatchEvent(new CustomEvent('cplace:doSwitchLanguage'));

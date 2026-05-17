@@ -21,6 +21,14 @@ function copyModuleAssets() {
         if (existsSync(moduleCss)) {
           copyFileSync(moduleCss, join(outDir, `${entry}-module.css`));
         }
+        const moduleDir = join(modulesDir, entry);
+        if (existsSync(moduleDir)) {
+          for (const file of readdirSync(moduleDir)) {
+            if (/\.(svg|png)$/i.test(file)) {
+              copyFileSync(join(moduleDir, file), join(outDir, `${entry}-${file}`));
+            }
+          }
+        }
       }
     },
   };

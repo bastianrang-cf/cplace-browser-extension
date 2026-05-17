@@ -194,7 +194,7 @@ export default {
   defaultEnabled: false,
   css: true,
   pageScript: true,
-  actions: [{ id: 'show-system-info', label: 'System Info' }],
+  actions: [{ id: 'show-system-info', label: 'System Info', icon: 'ℹ️' }],
   apply() {
     if (active) return;
     active = true;
