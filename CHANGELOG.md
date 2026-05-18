@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.13.0...v0.13.1) (2026-05-18)
+
+
+### Bug Fixes
+
+* merge enabled-module defaults in popup so new modules appear without reinstall ([#71](https://github.com/bastianrang-cf/cplace-browser-extension/issues/71)) ([f081b89](https://github.com/bastianrang-cf/cplace-browser-extension/commit/f081b894b13c43e1c6eab57f1f426f8d5bdb5b27))
+
 ## [0.13.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.12.2...v0.13.0) (2026-05-18)
 
 
