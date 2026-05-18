@@ -30,6 +30,14 @@ Enable or disable modules on the **Options** page (`chrome://extensions` → cpl
 
 > Not yet published — load manually (see below).
 
+### :wrench: Install in 1 Minute (zip from Release)
+
+1. Download the latest `.zip` for your browser from the [Releases page](https://github.com/bastianrang-cf/cplace-browser-extension/releases).
+2. Open your browser's extension page — `chrome://extensions/` in Chrome, `edge://extensions/` in Edge.
+3. Enable **Developer mode**.
+4. Drag and drop the downloaded `.zip` file onto the extensions page.
+5. Open the extension **Options** to enable the features you want.
+
 ### Manual (unpacked)
 
 1. Clone this repo and run `npm install && npm run build`.
