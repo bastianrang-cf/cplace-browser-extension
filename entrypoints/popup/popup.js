@@ -13,7 +13,8 @@ async function init() {
     } catch (_) {}
   }
 
-  const enabledMap = await enabledModulesItem.getValue();
+  const storedMap = await enabledModulesItem.getValue();
+  const enabledMap = { ...registry.defaultEnabledMap(), ...(storedMap || {}) };
 
   const actionItems = [];
   const navLinksMods = [];
