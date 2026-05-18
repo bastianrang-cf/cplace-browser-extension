@@ -1,10 +1,8 @@
-import { registry } from '../../modules/registry.js';
-
-const STORAGE_KEY = 'enabledModules';
+import { registry } from '../../features/registry.js';
+import { enabledModulesItem } from '../../features/storage.js';
 
 async function init() {
-  const stored = await browser.storage.local.get(STORAGE_KEY);
-  const enabledMap = stored[STORAGE_KEY] || {};
+  const enabledMap = await enabledModulesItem.getValue();
 
   const actionItems = [];
   for (const mod of registry.all()) {

@@ -1,9 +1,7 @@
-import { defineContentScript } from 'wxt/utils/define-content-script';
-import { registry } from '../modules/registry.js';
-import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../modules/utils.js';
-
-const STORAGE_KEY = 'enabledModules';
-const OPTIONS_KEY = 'moduleOptions';
+import { defineContentScript, injectScript } from '#imports';
+import { registry } from '../features/registry.js';
+import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../features/utils.js';
+import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -88,9 +86,7 @@ export default defineContentScript({
       }
       if (found && !versionInjected) {
         versionInjected = true;
-        const s = document.createElement('script');
-        s.src = browser.runtime.getURL('detect-version-page.js');
-        (document.head || document.documentElement).appendChild(s);
+        injectScript('/detect-version-page.js', { keepInDom: true }).catch(() => {});
       }
     }
 
@@ -105,10 +101,12 @@ export default defineContentScript({
 
     // --- Module runtime ---
 
-    browser.storage.local.get([STORAGE_KEY, OPTIONS_KEY]).then((data) => {
-      moduleOptions = data[OPTIONS_KEY] || {};
-      applyAll(data[STORAGE_KEY]);
-    });
+    Promise.all([enabledModulesItem.getValue(), moduleOptionsItem.getValue()]).then(
+      ([enabled, options]) => {
+        moduleOptions = options;
+        applyAll(enabled);
+      },
+    );
 
     browser.runtime.onMessage.addListener((msg) => {
       if (!msg) return;
@@ -140,9 +138,8 @@ export default defineContentScript({
       }
     });
 
-    browser.storage.onChanged.addListener((changes, area) => {
-      if (area !== 'local' || !changes[STORAGE_KEY]) return;
-      applyAll(changes[STORAGE_KEY].newValue);
+    enabledModulesItem.watch((newValue) => {
+      applyAll(newValue);
     });
   },
 });

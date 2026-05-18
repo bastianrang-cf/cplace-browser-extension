@@ -5,9 +5,7 @@ async function loadContent() {
   const mod = await import('../entrypoints/content.js');
   mod.default.main();
   // Drain the storage.get microtask chain without using timers
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let i = 0; i < 10; i++) await Promise.resolve();
   return mod;
 }
 
@@ -15,7 +13,8 @@ beforeEach(async () => {
   vi.useRealTimers();
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
-  vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p}`);
+  vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p.replace(/^\//, '')}`);
+  vi.spyOn(fakeBrowser.runtime, 'getManifest').mockReturnValue({ manifest_version: 3 });
   vi.resetModules();
   document.documentElement.innerHTML = '<head></head><body></body>';
 });

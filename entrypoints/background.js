@@ -1,15 +1,11 @@
-import { defineBackground } from 'wxt/utils/define-background';
-import { registry } from '../modules/registry.js';
-
-const STORAGE_KEY = 'enabledModules';
-const OPTIONS_KEY = 'moduleOptions';
+import { defineBackground } from '#imports';
+import { registry } from '../features/registry.js';
+import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
 
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(async () => {
-    const stored = await browser.storage.local.get([STORAGE_KEY, OPTIONS_KEY]);
-
     const enabledDefaults = registry.defaultEnabledMap();
-    const currentEnabled = stored[STORAGE_KEY] || {};
+    const currentEnabled = await enabledModulesItem.getValue();
     let enabledChanged = false;
     for (const [id, def] of Object.entries(enabledDefaults)) {
       if (!(id in currentEnabled)) {
@@ -17,10 +13,10 @@ export default defineBackground(() => {
         enabledChanged = true;
       }
     }
-    if (enabledChanged) await browser.storage.local.set({ [STORAGE_KEY]: currentEnabled });
+    if (enabledChanged) await enabledModulesItem.setValue(currentEnabled);
 
     const optionDefaults = registry.defaultOptionsMap();
-    const currentOptions = stored[OPTIONS_KEY] || {};
+    const currentOptions = await moduleOptionsItem.getValue();
     let optionsChanged = false;
     for (const [id, defaults] of Object.entries(optionDefaults)) {
       if (!(id in currentOptions)) {
@@ -35,7 +31,7 @@ export default defineBackground(() => {
         }
       }
     }
-    if (optionsChanged) await browser.storage.local.set({ [OPTIONS_KEY]: currentOptions });
+    if (optionsChanged) await moduleOptionsItem.setValue(currentOptions);
   });
 
   browser.runtime.onMessage.addListener((msg, sender) => {
