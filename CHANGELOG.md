@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.12.1...v0.12.2) (2026-05-18)
+
+
+### Bug Fixes
+
+* use query param for badge color so release-please doesn't strip it ([#61](https://github.com/bastianrang-cf/cplace-browser-extension/issues/61)) ([cb183fd](https://github.com/bastianrang-cf/cplace-browser-extension/commit/cb183fde3949d9aae6ed8830f64d61aa5342150b))
+
 ## [0.12.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.12.0...v0.12.1) (2026-05-18)
 
 
