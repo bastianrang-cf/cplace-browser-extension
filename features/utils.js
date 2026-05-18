@@ -1,3 +1,5 @@
+import { injectScript } from 'wxt/utils/inject-script';
+
 export function injectModuleCSS(moduleId) {
   const id = `cplace-${moduleId}-link`;
   if (document.getElementById(id)) return;
@@ -12,13 +14,13 @@ export function removeModuleCSS(moduleId) {
   document.getElementById(`cplace-${moduleId}-link`)?.remove();
 }
 
-export function injectPageScript(moduleId) {
+export async function injectPageScript(moduleId) {
   const id = `cplace-${moduleId}-script`;
   if (document.getElementById(id)) return;
-  const script = document.createElement('script');
-  script.id = id;
-  script.src = browser.runtime.getURL(`${moduleId}-page.js`);
-  (document.head || document.documentElement).appendChild(script);
+  await injectScript(`/${moduleId}-page.js`, {
+    keepInDom: true,
+    modifyScript(el) { el.id = id; },
+  }).catch(() => {});
 }
 
 export function removePageScript(moduleId) {

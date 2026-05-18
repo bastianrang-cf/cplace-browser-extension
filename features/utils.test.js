@@ -4,7 +4,8 @@ import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } 
 
 beforeEach(() => {
   fakeBrowser.reset();
-  vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p}`);
+  vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p.replace(/^\//, '')}`);
+  vi.spyOn(fakeBrowser.runtime, 'getManifest').mockReturnValue({ manifest_version: 3 });
   document.documentElement.innerHTML = '<head></head><body></body>';
 });
 
@@ -54,40 +55,40 @@ describe('removeModuleCSS()', () => {
 });
 
 describe('injectPageScript()', () => {
-  it('creates a script element with the correct id', () => {
-    injectPageScript('my-module');
+  it('creates a script element with the correct id', async () => {
+    await injectPageScript('my-module');
     expect(document.getElementById('cplace-my-module-script')).not.toBeNull();
   });
 
-  it('sets correct src', () => {
-    injectPageScript('my-module');
+  it('sets correct src', async () => {
+    await injectPageScript('my-module');
     const script = document.getElementById('cplace-my-module-script');
     expect(script.src).toContain('my-module-page.js');
   });
 
-  it('appends to document head', () => {
-    injectPageScript('my-module');
+  it('appends to document head', async () => {
+    await injectPageScript('my-module');
     expect(document.head.contains(document.getElementById('cplace-my-module-script'))).toBe(true);
   });
 
-  it('falls back to documentElement when head is absent', () => {
+  it('falls back to documentElement when head is absent', async () => {
     document.head.remove();
-    injectPageScript('my-module');
+    await injectPageScript('my-module');
     const script = document.getElementById('cplace-my-module-script');
     expect(script).not.toBeNull();
     expect(document.documentElement.contains(script)).toBe(true);
   });
 
-  it('is idempotent — calling twice creates only one element', () => {
-    injectPageScript('my-module');
-    injectPageScript('my-module');
+  it('is idempotent — calling twice creates only one element', async () => {
+    await injectPageScript('my-module');
+    await injectPageScript('my-module');
     expect(document.querySelectorAll('#cplace-my-module-script').length).toBe(1);
   });
 });
 
 describe('removePageScript()', () => {
-  it('removes the script element', () => {
-    injectPageScript('my-module');
+  it('removes the script element', async () => {
+    await injectPageScript('my-module');
     removePageScript('my-module');
     expect(document.getElementById('cplace-my-module-script')).toBeNull();
   });
