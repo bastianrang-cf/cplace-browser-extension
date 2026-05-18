@@ -65,7 +65,7 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create one manuall
 
 ### Module system
 
-Each module lives in `modules/<id>/index.js` and exports a descriptor:
+Each module lives in `features/<id>/index.js` and exports a descriptor:
 
 ```js
 export default {
@@ -73,18 +73,18 @@ export default {
   name: 'My Module',
   description: 'What it does.',
   defaultEnabled: false,
-  css: true,        // optional — auto-injects modules/<id>/module.css
-  pageScript: true, // optional — auto-injects modules/<id>/page.js
+  css: true,        // optional — auto-injects features/<id>/module.css
+  pageScript: true, // optional — auto-injects features/<id>/page.js
   apply()  { /* optional — activate beyond asset injection; must be idempotent */ },
   revert() { /* optional — undo apply exactly */ },
 };
 ```
 
-`modules/registry.js` auto-discovers all `modules/*/index.js` files. The background seeds `browser.storage.local` on first install. The content script reads storage, calls `apply()` / `revert()` on toggles, and listens for live `cplace:moduleToggle` messages broadcast by the background when settings change.
+`features/registry.js` auto-discovers all `features/*/index.js` files. The background seeds the typed storage items (`enabledModulesItem`, `moduleOptionsItem` from `features/storage.js`, backed by `local:` storage) on first install. The content script reads them, calls `apply()` / `revert()` on toggles, and listens for live `cplace:moduleToggle` messages broadcast by the background when settings change.
 
 ### Adding a new module
 
-1. Create `modules/<id>/` containing `index.js` with the descriptor shape above. Optionally add `module.css` (declare `css: true`), `page.js` for page-world logic (declare `pageScript: true`), and `index.test.js`.
+1. Create `features/<id>/` containing `index.js` with the descriptor shape above. Optionally add `module.css` (declare `css: true`), `page.js` for page-world logic (declare `pageScript: true`), and `index.test.js`.
 2. **Update the Modules table in this README** to reflect the new module's name, default, and description.
 
 The registry auto-discovers the new module — no other files need to change.
@@ -93,11 +93,11 @@ The registry auto-discovers the new module — no other files need to change.
 
 Content scripts run in an isolated world. The framework handles two kinds of extension-origin assets automatically — no `unsafe-inline` needed, no `wxt.config.js` changes required:
 
-**CSS** (`modules/<id>/module.css` + `css: true`): the framework injects a `<link>` pointing at `<id>-module.css` on apply and removes it on revert.
+**CSS** (`features/<id>/module.css` + `css: true`): the framework injects a `<link>` pointing at `<id>-module.css` on apply and removes it on revert.
 
-**Page-world scripts** (`modules/<id>/page.js` + `pageScript: true`): use this when a module needs page-level globals (e.g. `jQuery`, `_cplace_languages_`). The framework injects a `<script src="<id>-page.js">` on apply and removes it on revert.
+**Page-world scripts** (`features/<id>/page.js` + `pageScript: true`): use this when a module needs page-level globals (e.g. `jQuery`, `_cplace_languages_`). The framework calls WXT's `injectScript()` for `<id>-page.js` on apply and removes the `<script>` element on revert.
 
-The build copies each `modules/<id>/module.css` and `modules/<id>/page.js` to the extension root; `web_accessible_resources` already covers `*-module.css` and `*-page.js`.
+A WXT build module at `modules/cplace-features.js` stages flattened, renamed feature assets into the extension output (`<id>-page.js`, `<id>-module.css`, plus any `<id>-*.svg`/`.png`). `web_accessible_resources` already covers `*-module.css` and `*-page.js` — no `wxt.config.js` changes required.
 
 ---
 
