@@ -1,4 +1,5 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
+import { injectScript } from 'wxt/utils/inject-script';
 import { registry } from '../features/registry.js';
 import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../features/utils.js';
 
@@ -88,9 +89,7 @@ export default defineContentScript({
       }
       if (found && !versionInjected) {
         versionInjected = true;
-        const s = document.createElement('script');
-        s.src = browser.runtime.getURL('detect-version-page.js');
-        (document.head || document.documentElement).appendChild(s);
+        injectScript('/detect-version-page.js', { keepInDom: true });
       }
     }
 

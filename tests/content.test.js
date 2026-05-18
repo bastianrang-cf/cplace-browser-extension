@@ -15,7 +15,8 @@ beforeEach(async () => {
   vi.useRealTimers();
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
-  vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p}`);
+  vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p.replace(/^\//, '')}`);
+  vi.spyOn(fakeBrowser.runtime, 'getManifest').mockReturnValue({ manifest_version: 3 });
   vi.resetModules();
   document.documentElement.innerHTML = '<head></head><body></body>';
 });
