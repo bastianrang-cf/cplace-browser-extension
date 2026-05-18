@@ -1,4 +1,4 @@
-import { injectScript } from 'wxt/utils/inject-script';
+import { injectScript } from '#imports';
 
 export function injectModuleCSS(moduleId) {
   const id = `cplace-${moduleId}-link`;

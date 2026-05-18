@@ -1,4 +1,4 @@
-import { defineBackground } from 'wxt/utils/define-background';
+import { defineBackground } from '#imports';
 import { registry } from '../features/registry.js';
 import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
 

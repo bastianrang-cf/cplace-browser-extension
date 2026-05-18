@@ -1,5 +1,4 @@
-import { defineContentScript } from 'wxt/utils/define-content-script';
-import { injectScript } from 'wxt/utils/inject-script';
+import { defineContentScript, injectScript } from '#imports';
 import { registry } from '../features/registry.js';
 import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../features/utils.js';
 import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';

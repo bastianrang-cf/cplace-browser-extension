@@ -1,4 +1,4 @@
-import { defineUnlistedScript } from 'wxt/utils/define-unlisted-script';
+import { defineUnlistedScript } from '#imports';
 
 export default defineUnlistedScript(() => {
   if (window.__cplaceDetectVersionLoaded) return;
