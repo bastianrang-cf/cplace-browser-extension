@@ -52,3 +52,56 @@ button:hover {
   font-size: 13px;
   opacity: 0.65;
 }
+
+/* ── Navigation link group (accordion) ─────────────────────── */
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group__toggle {
+  justify-content: flex-start;
+}
+
+.nav-group__chevron {
+  margin-left: auto;
+  display: inline-block;
+  transition: transform 0.15s ease;
+  line-height: 1;
+}
+
+.nav-group__chevron::before {
+  content: '▸';
+}
+
+.nav-group--open .nav-group__chevron {
+  transform: rotate(90deg);
+}
+
+.nav-group__list {
+  display: flex;
+  flex-direction: column;
+  padding-left: 8px;
+  margin-top: 2px;
+  gap: 2px;
+}
+
+.nav-group__list[hidden] {
+  display: none;
+}
+
+.nav-group__link {
+  display: block;
+  padding: 6px 12px 6px 28px;
+  font-size: 13px;
+  color: CanvasText;
+  text-decoration: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav-group__link:hover {
+  background: color-mix(in srgb, CanvasText 10%, transparent);
+}
