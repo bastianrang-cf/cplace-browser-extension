@@ -5,9 +5,7 @@ async function loadContent() {
   const mod = await import('../entrypoints/content.js');
   mod.default.main();
   // Drain the storage.get microtask chain without using timers
-  await Promise.resolve();
-  await Promise.resolve();
-  await Promise.resolve();
+  for (let i = 0; i < 10; i++) await Promise.resolve();
   return mod;
 }
 

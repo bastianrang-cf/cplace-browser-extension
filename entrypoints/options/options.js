@@ -1,7 +1,6 @@
 import { registry } from '../../features/registry.js';
+import { enabledModulesItem, moduleOptionsItem } from '../../features/storage.js';
 
-const STORAGE_KEY = 'enabledModules';
-const OPTIONS_KEY = 'moduleOptions';
 const list = document.getElementById('module-list');
 
 function buildOptionInput(opt, currentValue) {
@@ -73,25 +72,24 @@ function render(enabled, savedOpts) {
 }
 
 async function onToggle(id, enabled) {
-  const data = await browser.storage.local.get(STORAGE_KEY);
-  const current = data[STORAGE_KEY] || {};
+  const current = await enabledModulesItem.getValue();
   current[id] = enabled;
-  await browser.storage.local.set({ [STORAGE_KEY]: current });
+  await enabledModulesItem.setValue(current);
   browser.runtime.sendMessage({ type: 'cplace:moduleToggle', id, enabled });
 }
 
 async function onOptionChange(moduleId, optId, type, input) {
   const value = type === 'number' ? Number(input.value) : type === 'boolean' ? input.checked : input.value;
-  const data = await browser.storage.local.get(OPTIONS_KEY);
-  const current = data[OPTIONS_KEY] || {};
+  const current = await moduleOptionsItem.getValue();
   current[moduleId] = { ...(current[moduleId] || {}), [optId]: value };
-  await browser.storage.local.set({ [OPTIONS_KEY]: current });
+  await moduleOptionsItem.setValue(current);
   browser.runtime.sendMessage({ type: 'cplace:moduleOptions', id: moduleId, options: current[moduleId] });
 }
 
-browser.storage.local.get([STORAGE_KEY, OPTIONS_KEY]).then((data) => {
-  const defaults = registry.defaultEnabledMap();
-  const enabled = { ...defaults, ...(data[STORAGE_KEY] || {}) };
-  const savedOpts = data[OPTIONS_KEY] || {};
-  render(enabled, savedOpts);
-});
+Promise.all([enabledModulesItem.getValue(), moduleOptionsItem.getValue()]).then(
+  ([stored, savedOpts]) => {
+    const defaults = registry.defaultEnabledMap();
+    const enabled = { ...defaults, ...stored };
+    render(enabled, savedOpts);
+  },
+);
