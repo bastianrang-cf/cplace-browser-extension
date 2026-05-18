@@ -86,7 +86,7 @@ export default defineContentScript({
       }
       if (found && !versionInjected) {
         versionInjected = true;
-        injectScript('/detect-version-page.js', { keepInDom: true });
+        injectScript('/detect-version-page.js', { keepInDom: true }).catch(() => {});
       }
     }
 
