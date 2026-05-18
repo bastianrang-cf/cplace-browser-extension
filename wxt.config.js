@@ -12,21 +12,21 @@ function copyModuleAssets() {
       const outDir = options.dir;
       if (!outDir) return;
       const modulesDir = join(__dirname, 'modules');
-      for (const entry of readdirSync(modulesDir)) {
-        const pageScript = join(modulesDir, entry, 'page.js');
+      for (const dirent of readdirSync(modulesDir, { withFileTypes: true })) {
+        if (!dirent.isDirectory()) continue;
+        const entry = dirent.name;
+        const moduleDir = join(modulesDir, entry);
+        const pageScript = join(moduleDir, 'page.js');
         if (existsSync(pageScript)) {
           copyFileSync(pageScript, join(outDir, `${entry}-page.js`));
         }
-        const moduleCss = join(modulesDir, entry, 'module.css');
+        const moduleCss = join(moduleDir, 'module.css');
         if (existsSync(moduleCss)) {
           copyFileSync(moduleCss, join(outDir, `${entry}-module.css`));
         }
-        const moduleDir = join(modulesDir, entry);
-        if (existsSync(moduleDir)) {
-          for (const file of readdirSync(moduleDir)) {
-            if (/\.(svg|png)$/i.test(file)) {
-              copyFileSync(join(moduleDir, file), join(outDir, `${entry}-${file}`));
-            }
+        for (const file of readdirSync(moduleDir)) {
+          if (/\.(svg|png)$/i.test(file)) {
+            copyFileSync(join(moduleDir, file), join(outDir, `${entry}-${file}`));
           }
         }
       }
