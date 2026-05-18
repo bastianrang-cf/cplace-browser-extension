@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.12.0...v0.12.1) (2026-05-18)
+
+
+### Bug Fixes
+
+* skip non-directory entries when copying module assets ([#57](https://github.com/bastianrang-cf/cplace-browser-extension/issues/57)) ([d1c30e7](https://github.com/bastianrang-cf/cplace-browser-extension/commit/d1c30e77ce414e1e393cf2d6f8c6d99d860ceef3))
+
 ## [0.12.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.11.0...v0.12.0) (2026-05-17)
 
 
