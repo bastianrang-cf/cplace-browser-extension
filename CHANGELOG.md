@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.12.2...v0.13.0) (2026-05-18)
+
+
+### Features
+
+* add Navigation Links popup submenu (closes [#67](https://github.com/bastianrang-cf/cplace-browser-extension/issues/67)) ([#68](https://github.com/bastianrang-cf/cplace-browser-extension/issues/68)) ([5a50f2a](https://github.com/bastianrang-cf/cplace-browser-extension/commit/5a50f2aa0496e109641739f1f987a40b64b57747))
+
 ## [0.12.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.12.1...v0.12.2) (2026-05-18)
 
 
