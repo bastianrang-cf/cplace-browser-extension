@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.13.1...v0.13.2) (2026-05-18)
+
+
+### Bug Fixes
+
+* add activeTab permission so popup can read tab.url for nav links ([#73](https://github.com/bastianrang-cf/cplace-browser-extension/issues/73)) ([661dfba](https://github.com/bastianrang-cf/cplace-browser-extension/commit/661dfba014eb21621f49dc97d1294c9a186e3a2e))
+
 ## [0.13.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.13.0...v0.13.1) (2026-05-18)
 
 
