@@ -11,11 +11,11 @@ function copyModuleAssets() {
     writeBundle(options) {
       const outDir = options.dir;
       if (!outDir) return;
-      const modulesDir = join(__dirname, 'modules');
-      for (const dirent of readdirSync(modulesDir, { withFileTypes: true })) {
+      const featuresDir = join(__dirname, 'features');
+      for (const dirent of readdirSync(featuresDir, { withFileTypes: true })) {
         if (!dirent.isDirectory()) continue;
         const entry = dirent.name;
-        const moduleDir = join(modulesDir, entry);
+        const moduleDir = join(featuresDir, entry);
         const pageScript = join(moduleDir, 'page.js');
         if (existsSync(pageScript)) {
           copyFileSync(pageScript, join(outDir, `${entry}-page.js`));
@@ -35,7 +35,6 @@ function copyModuleAssets() {
 }
 
 export default defineConfig({
-  modulesDir: '.wxt/user-modules',
   vite: () => ({
     plugins: [copyModuleAssets()],
   }),

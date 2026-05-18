@@ -1,4 +1,4 @@
-import { registry } from '../../modules/registry.js';
+import { registry } from '../../features/registry.js';
 
 const STORAGE_KEY = 'enabledModules';
 const OPTIONS_KEY = 'moduleOptions';

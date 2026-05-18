@@ -1,6 +1,6 @@
 import { defineContentScript } from 'wxt/utils/define-content-script';
-import { registry } from '../modules/registry.js';
-import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../modules/utils.js';
+import { registry } from '../features/registry.js';
+import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../features/utils.js';
 
 const STORAGE_KEY = 'enabledModules';
 const OPTIONS_KEY = 'moduleOptions';
