@@ -1,4 +1,7 @@
+import { batchJobsCacheItem } from '../storage.js';
+
 const PANEL_ID = 'cplace-batch-jobs-panel';
+const CACHE_PRUNE_MS = 60 * 60 * 1000;
 
 let intervalId        = null;
 let tickId            = null;
@@ -9,10 +12,25 @@ let applied           = false;
 let visibilityHandler = null;
 let currentContext    = null;
 
-function fetchRunningJobs() {
+function ttlMs() {
+  return Math.max(pollMs - 5_000, Math.floor(pollMs * 0.9));
+}
+
+async function fetchRunningJobs() {
+  const baseUrl = currentContext?.baseUrl ?? null;
+  if (baseUrl) {
+    try {
+      const cache = await batchJobsCacheItem.getValue();
+      const entry = cache?.[baseUrl];
+      if (entry && !entry.error && Date.now() - entry.timestamp < ttlMs()) {
+        renderPanel(parseRows(entry.rows).slice(0, jobLimit), baseUrl);
+        return;
+      }
+    } catch (_) { /* fall through to live fetch */ }
+  }
   document.dispatchEvent(new CustomEvent('cplace:fetchBatchJobs', {
     detail: {
-      baseUrl: currentContext?.baseUrl ?? null,
+      baseUrl,
       contextPath: currentContext?.contextPath ?? null,
     },
   }));
@@ -243,13 +261,27 @@ function renderError(msg) {
   panel.appendChild(el);
 }
 
+function writeCache(baseUrl, rows, total) {
+  batchJobsCacheItem.getValue().then((cache) => {
+    const next = {};
+    const cutoff = Date.now() - CACHE_PRUNE_MS;
+    for (const [key, entry] of Object.entries(cache || {})) {
+      if (entry?.timestamp && entry.timestamp >= cutoff) next[key] = entry;
+    }
+    next[baseUrl] = { rows, total, error: null, timestamp: Date.now() };
+    return batchJobsCacheItem.setValue(next);
+  }).catch(() => {});
+}
+
 function onResult(event) {
-  const { rows = [], error } = event.detail || {};
+  const { rows = [], total = 0, error } = event.detail || {};
   if (error) {
     renderError(error);
     return;
   }
-  renderPanel(parseRows(rows).slice(0, jobLimit), currentContext?.baseUrl ?? null);
+  const baseUrl = currentContext?.baseUrl ?? null;
+  if (baseUrl) writeCache(baseUrl, rows, total);
+  renderPanel(parseRows(rows).slice(0, jobLimit), baseUrl);
 }
 
 export default {

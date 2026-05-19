@@ -71,6 +71,19 @@ The WXT build module at `modules/cplace-features.js` stages each `features/<id>/
 
 Extension-origin resources loaded via `href`/`src` are always CSP-safe — no `unsafe-inline` required.
 
+### Caching repeated same-instance requests
+
+Users typically open many tabs of the same cplace instance/tenant. If a feature issues a network request whose response is identical across those tabs, **cache the response** so sibling tabs reuse it instead of refetching.
+
+- Define a dedicated storage item in `features/storage.js`: `storage.defineItem('local:<feature>Cache', { fallback: {} })`. Use `local:` — `chrome.storage.session` requires a background-side `setAccessLevel` to be reachable from content scripts.
+- Key the cache by `context.baseUrl` (origin + tenant) when the endpoint is tenant-scoped (e.g. `/flexigrid/customTableData`), or by `context.origin` when the endpoint is tenant-agnostic (e.g. version detection). Both come from `deriveBaseUrl()` in `features/base-url.js` and are already passed into `apply()` / `onVersionDetected()`.
+- Cache shape: `{ rows/data, error: null, timestamp: Date.now() }`. TTL should be slightly shorter than the natural refresh interval (e.g. `Math.max(pollMs - 5_000, Math.floor(pollMs * 0.9))`) so sibling tabs reliably hit the shared entry without ever serving data older than the user-configured interval.
+- On cache hit, render directly from the cached value — do **not** re-dispatch the result event, since that would re-write the cache and indefinitely extend the TTL.
+- Only write the cache on real network results, never on errors (otherwise a transient failure poisons every sibling tab).
+- Prune entries older than ~1h on each write to keep the map small.
+
+Reference implementation: the `batch-jobs` feature (`features/batch-jobs/index.js`, `batchJobsCacheItem` in `features/storage.js`).
+
 ### WXT idioms used by this project
 
 - Entrypoints use `defineBackground`, `defineContentScript`, `defineUnlistedScript` from the `#imports` auto-import alias.
