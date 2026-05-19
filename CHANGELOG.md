@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.14.0...v0.14.1) (2026-05-19)
+
+
+### Bug Fixes
+
+* condition for Chrome extension submission ([67c1561](https://github.com/bastianrang-cf/cplace-browser-extension/commit/67c15614b7d176988c8c9f243d079a173047c36f))
+
 ## [0.14.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.13.2...v0.14.0) (2026-05-19)
 
 
