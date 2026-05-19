@@ -51,5 +51,5 @@ jobs:
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-        if: env.CHROME_EXTENSION_ID != ''
+        if: env.CHROME_CLIENT_ID != '' 
         run: npx wxt submit --chrome-zip .output/*-chrome.zip
