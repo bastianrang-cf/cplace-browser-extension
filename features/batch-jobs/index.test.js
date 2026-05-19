@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
+import { batchJobsCacheItem } from '../storage.js';
 
 beforeEach(() => {
   fakeBrowser.reset();
@@ -353,6 +354,125 @@ describe('batch-jobs module', () => {
       expect(document.querySelector('.cplace-bj-error')).toBeNull();
       expect(document.querySelector('.cplace-bj-badge')).not.toBeNull();
 
+      mod.revert();
+    });
+
+    it('writes the result into batchJobsCache keyed by baseUrl', async () => {
+      const mod = await loadMod();
+      const context = {
+        version: '25.4', origin: 'https://h', instance: 'h', tenant: 'training',
+        baseUrl: 'https://h/training', contextPath: '/training/',
+      };
+      mod.apply({}, context);
+
+      const startedAt = Date.now() - 3000;
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: {
+          rows: [{
+            id: 'persistentJob_job1',
+            html: rowHtml({
+              name: 'Job One', href: '/training/batchJob/view?id=job1',
+              startedAt, state: 'running', duration: 0,
+            }),
+          }],
+          total: 1,
+        },
+      }));
+
+      // Flush microtasks so the async storage write completes
+      await new Promise((r) => setTimeout(r, 0));
+
+      const cache = await batchJobsCacheItem.getValue();
+      expect(cache[context.baseUrl]).toBeDefined();
+      expect(cache[context.baseUrl].rows.length).toBe(1);
+      expect(cache[context.baseUrl].total).toBe(1);
+      expect(cache[context.baseUrl].error).toBeNull();
+      expect(typeof cache[context.baseUrl].timestamp).toBe('number');
+
+      mod.revert();
+    });
+
+    it('does not write the cache when the result is an error', async () => {
+      const mod = await loadMod();
+      const context = {
+        baseUrl: 'https://h/training', contextPath: '/training/',
+        origin: 'https://h', instance: 'h', tenant: 'training', version: null,
+      };
+      mod.apply({}, context);
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: { error: '503 Service Unavailable', rows: [], total: 0 },
+      }));
+      await new Promise((r) => setTimeout(r, 0));
+
+      const cache = await batchJobsCacheItem.getValue();
+      expect(cache[context.baseUrl]).toBeUndefined();
+
+      mod.revert();
+    });
+
+    it('renders from cache and skips the fetch event when a fresh entry exists for baseUrl', async () => {
+      const context = {
+        version: '25.4', origin: 'https://h', instance: 'h', tenant: 'training',
+        baseUrl: 'https://h/training', contextPath: '/training/',
+      };
+      await batchJobsCacheItem.setValue({
+        [context.baseUrl]: {
+          rows: [{
+            id: 'persistentJob_cached',
+            html: rowHtml({
+              name: 'Cached Job', href: '/training/batchJob/view?id=cached',
+              startedAt: Date.now() - 1000, state: 'success', duration: 1000,
+            }),
+          }],
+          total: 1,
+          error: null,
+          timestamp: Date.now(),
+        },
+      });
+
+      const fetchListener = vi.fn();
+      document.addEventListener('cplace:fetchBatchJobs', fetchListener);
+
+      const mod = await loadMod();
+      mod.apply({}, context);
+
+      // Let the cache lookup promise resolve
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(fetchListener).not.toHaveBeenCalled();
+      const panel = document.getElementById('cplace-batch-jobs-panel');
+      expect(panel).not.toBeNull();
+      expect(panel.querySelector('.cplace-bj-badge')).not.toBeNull();
+
+      document.removeEventListener('cplace:fetchBatchJobs', fetchListener);
+      mod.revert();
+    });
+
+    it('falls through to the fetch event when the cache entry is stale', async () => {
+      const context = {
+        version: '25.4', origin: 'https://h', instance: 'h', tenant: 'training',
+        baseUrl: 'https://h/training', contextPath: '/training/',
+      };
+      // Default pollMs = 60_000 → ttl = 55_000. Make the entry older.
+      await batchJobsCacheItem.setValue({
+        [context.baseUrl]: {
+          rows: [], total: 0, error: null,
+          timestamp: Date.now() - 120_000,
+        },
+      });
+
+      const fetchListener = vi.fn();
+      document.addEventListener('cplace:fetchBatchJobs', fetchListener);
+
+      const mod = await loadMod();
+      mod.apply({}, context);
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(fetchListener).toHaveBeenCalledTimes(1);
+      expect(fetchListener.mock.calls[0][0].detail.baseUrl).toBe(context.baseUrl);
+
+      document.removeEventListener('cplace:fetchBatchJobs', fetchListener);
       mod.revert();
     });
 
