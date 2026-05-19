@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.14.1...v0.14.2) (2026-05-19)
+
+
+### Bug Fixes
+
+* ship release ZIPs with stable manifest key ([#81](https://github.com/bastianrang-cf/cplace-browser-extension/issues/81)) ([56909b1](https://github.com/bastianrang-cf/cplace-browser-extension/commit/56909b10c5d73fc921c4a68edb8d4c24d5506e07))
+
 ## [0.14.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.14.0...v0.14.1) (2026-05-19)
 
 
