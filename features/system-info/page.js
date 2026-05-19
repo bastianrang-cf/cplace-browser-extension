@@ -2,16 +2,18 @@
   if (window.__cplaceSystemInfoPageLoaded) return;
   window.__cplaceSystemInfoPageLoaded = true;
 
-  document.addEventListener('cplace:fetchSystemInfo', function () {
-    if (typeof _context_ === 'undefined' || typeof jQuery === 'undefined') {
+  document.addEventListener('cplace:fetchSystemInfo', function (event) {
+    var detail = (event && event.detail) || {};
+    var baseUrl = detail.baseUrl;
+
+    if (!baseUrl || typeof jQuery === 'undefined') {
       document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
-        detail: { data: null, error: 'cplace context or jQuery not available' },
+        detail: { data: null, error: 'cplace base URL or jQuery not available' },
       }));
       return;
     }
 
-    var contextUrl = new URL(_context_, window.location.origin);
-    var url = contextUrl.href + 'cplace-fe/cf.cplace.platform/system-info';
+    var url = baseUrl + '/cplace-fe/cf.cplace.platform/system-info';
 
     jQuery.ajax({
       url: url,

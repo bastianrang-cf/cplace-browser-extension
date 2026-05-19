@@ -7,11 +7,11 @@ export default {
   revert() {
     try { browser.runtime.sendMessage({ type: 'cplace:clearBadge' }); } catch (_) {}
   },
-  onVersionDetected({ version, hostname, tenant }) {
+  onVersionDetected({ version, instance, tenant }) {
     let title = 'cplace';
     if (version) title += ' ' + version;
-    if (hostname) {
-      title += ' on ' + hostname;
+    if (instance) {
+      title += ' on ' + instance;
       if (tenant) title += '/' + tenant;
     }
     try {

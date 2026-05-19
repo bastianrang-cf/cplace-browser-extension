@@ -135,7 +135,6 @@ describe('batch-jobs module', () => {
             }),
           }],
           total: 1,
-          tenantPath: '/training/',
         },
       }));
 
@@ -162,7 +161,7 @@ describe('batch-jobs module', () => {
       mod.apply();
 
       document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
-        detail: { rows: [], total: 0, tenantPath: '/training/' },
+        detail: { rows: [], total: 0 },
       }));
 
       expect(document.getElementById('cplace-batch-jobs-panel')).toBeNull();
@@ -192,7 +191,6 @@ describe('batch-jobs module', () => {
             },
           ],
           total: 2,
-          tenantPath: '/training/',
         },
       }));
 
@@ -207,7 +205,14 @@ describe('batch-jobs module', () => {
 
     it('expanded header shows link to batch jobs page', async () => {
       const mod = await loadMod();
-      mod.apply();
+      mod.apply({}, {
+        version: '25.4',
+        origin: 'https://h',
+        instance: 'h',
+        tenant: 'training',
+        baseUrl: 'https://h/training',
+        contextPath: '/training/',
+      });
 
       document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
         detail: {
@@ -218,7 +223,7 @@ describe('batch-jobs module', () => {
               startedAt: Date.now() - 3000, state: 'running', duration: 0,
             }),
           }],
-          total: 1, tenantPath: '/training/',
+          total: 1,
         },
       }));
 
@@ -249,7 +254,7 @@ describe('batch-jobs module', () => {
               startedAt: Date.now() - 3000, state: 'running', duration: 0,
             }) },
           ],
-          total: 2, tenantPath: '/training/',
+          total: 2,
         },
       }));
 
@@ -295,7 +300,7 @@ describe('batch-jobs module', () => {
       }
 
       document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
-        detail: { rows, total: rows.length, tenantPath: '/training/' },
+        detail: { rows, total: rows.length },
       }));
 
       document.querySelector('.cplace-bj-badge').click();
@@ -311,7 +316,7 @@ describe('batch-jobs module', () => {
       mod.apply();
 
       document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
-        detail: { error: '503 Service Unavailable', rows: [], total: 0, tenantPath: '' },
+        detail: { error: '503 Service Unavailable', rows: [], total: 0 },
       }));
 
       const panel = document.getElementById('cplace-batch-jobs-panel');
@@ -328,7 +333,7 @@ describe('batch-jobs module', () => {
       mod.apply();
 
       document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
-        detail: { error: 'Network error', rows: [], total: 0, tenantPath: '' },
+        detail: { error: 'Network error', rows: [], total: 0 },
       }));
       expect(document.querySelector('.cplace-bj-error')).not.toBeNull();
 
@@ -341,7 +346,7 @@ describe('batch-jobs module', () => {
               startedAt: Date.now() - 1000, state: 'running', duration: 0,
             }),
           }],
-          total: 1, tenantPath: '/training/',
+          total: 1,
         },
       }));
 
@@ -367,7 +372,7 @@ describe('batch-jobs module', () => {
       }
 
       document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
-        detail: { rows, total: rows.length, tenantPath: '/training/' },
+        detail: { rows, total: rows.length },
       }));
 
       const badge = document.querySelector('.cplace-bj-badge');

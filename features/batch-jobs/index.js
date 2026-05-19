@@ -7,9 +7,15 @@ let jobLimit          = 10;
 let pollMs            = 60_000;
 let applied           = false;
 let visibilityHandler = null;
+let currentContext    = null;
 
 function fetchRunningJobs() {
-  document.dispatchEvent(new CustomEvent('cplace:fetchBatchJobs'));
+  document.dispatchEvent(new CustomEvent('cplace:fetchBatchJobs', {
+    detail: {
+      baseUrl: currentContext?.baseUrl ?? null,
+      contextPath: currentContext?.contextPath ?? null,
+    },
+  }));
 }
 
 function startPolling() {
@@ -112,7 +118,7 @@ function parseRows(rows) {
   return jobs;
 }
 
-function renderPanel(jobs, tenantPath = '') {
+function renderPanel(jobs, baseUrl = null) {
   if (jobs.length === 0) {
     document.getElementById(PANEL_ID)?.remove();
     return;
@@ -133,7 +139,7 @@ function renderPanel(jobs, tenantPath = '') {
     badge.textContent = `Latest ${jobLimit} Batch jobs ▾`;
     badge.addEventListener('click', () => {
       expanded = true;
-      renderPanel(jobs, tenantPath);
+      renderPanel(jobs, baseUrl);
     });
     panel.appendChild(badge);
   } else {
@@ -143,9 +149,9 @@ function renderPanel(jobs, tenantPath = '') {
     const header = document.createElement('div');
     header.className = 'cplace-bj-header';
     let title;
-    if (tenantPath) {
+    if (baseUrl) {
       title = document.createElement('a');
-      title.href = window.location.origin + tenantPath + 'batchJob/jobs';
+      title.href = `${baseUrl}/batchJob/jobs`;
       title.target = '_blank';
       title.rel = 'noopener noreferrer';
     } else {
@@ -157,7 +163,7 @@ function renderPanel(jobs, tenantPath = '') {
     closeBtn.textContent = '✕';
     closeBtn.addEventListener('click', () => {
       expanded = false;
-      renderPanel(jobs, tenantPath);
+      renderPanel(jobs, baseUrl);
     });
     header.appendChild(title);
     header.appendChild(closeBtn);
@@ -238,12 +244,12 @@ function renderError(msg) {
 }
 
 function onResult(event) {
-  const { rows = [], tenantPath = '', error } = event.detail || {};
+  const { rows = [], error } = event.detail || {};
   if (error) {
     renderError(error);
     return;
   }
-  renderPanel(parseRows(rows).slice(0, jobLimit), tenantPath);
+  renderPanel(parseRows(rows).slice(0, jobLimit), currentContext?.baseUrl ?? null);
 }
 
 export default {
@@ -257,10 +263,11 @@ export default {
     { id: 'limitJobs',    label: 'Limit latest jobs',   type: 'number', default: 10 },
     { id: 'pollInterval', label: 'Poll interval (s)',    type: 'number', default: 60 },
   ],
-  apply(options = {}) {
+  apply(options = {}, context = null) {
     jobLimit = typeof options.limitJobs    === 'number' ? options.limitJobs   : 10;
     pollMs   = typeof options.pollInterval === 'number' && options.pollInterval > 0
                ? options.pollInterval * 1000 : 60_000;
+    currentContext = context;
     if (applied) return;
     applied = true;
     document.addEventListener('cplace:batchJobsResult', onResult);
@@ -284,5 +291,9 @@ export default {
     }
     document.getElementById(PANEL_ID)?.remove();
     expanded = false;
+    currentContext = null;
+  },
+  onVersionDetected(context) {
+    currentContext = context;
   },
 };

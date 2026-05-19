@@ -2,22 +2,24 @@
   if (window.__cplaceBatchJobsPageLoaded) return;
   window.__cplaceBatchJobsPageLoaded = true;
 
-  document.addEventListener('cplace:fetchBatchJobs', function () {
-    if (typeof _context_ === 'undefined' || typeof jQuery === 'undefined') {
-      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', { detail: { rows: [], total: 0, tenantPath: '' } }));
+  document.addEventListener('cplace:fetchBatchJobs', function (event) {
+    var detail = (event && event.detail) || {};
+    var baseUrl = detail.baseUrl;
+    var contextPath = detail.contextPath;
+
+    if (!baseUrl || typeof contextPath !== 'string' || typeof jQuery === 'undefined') {
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', { detail: { rows: [], total: 0 } }));
       return;
     }
 
-    var contextUrl = new URL(_context_, window.location.origin);
-    var tenantPath = contextUrl.pathname;
-    var url = contextUrl.href + 'flexigrid/customTableData';
+    var url = baseUrl + '/flexigrid/customTableData';
 
     var d = new Date();
     var pad = function (n) { return String(n).padStart(2, '0'); };
     var today = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 
     var formData = new FormData();
-    formData.append('componentIdentifier', tenantPath + 'batchJob/persistentJobsTableSpecification');
+    formData.append('componentIdentifier', contextPath + 'batchJob/persistentJobsTableSpecification');
     formData.append('columns', JSON.stringify(['_name_', 'createdAt', 'createdBy', 'startedAt', 'state', 'duration']));
     formData.append('searchValue', '');
     formData.append('filters', JSON.stringify({
@@ -39,13 +41,13 @@
       type: 'POST',
       success: function (data) {
         document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
-          detail: { rows: data.rows || [], total: data.total || 0, tenantPath: tenantPath },
+          detail: { rows: data.rows || [], total: data.total || 0 },
         }));
       },
       error: function (xhr, status, err) {
         var msg = xhr.status ? (xhr.status + ' ' + (err || status)) : (err || status || 'Network error');
         document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
-          detail: { error: msg, rows: [], total: 0, tenantPath: '' },
+          detail: { error: msg, rows: [], total: 0 },
         }));
       },
     });
