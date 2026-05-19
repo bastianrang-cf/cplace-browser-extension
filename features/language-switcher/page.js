@@ -1,6 +1,8 @@
 (function () {
-  document.addEventListener('cplace:doSwitchLanguage', function () {
-    if (typeof _cplace_languages_ === 'undefined') return;
+  document.addEventListener('cplace:doSwitchLanguage', function (event) {
+    var detail = (event && event.detail) || {};
+    var baseUrl = detail.baseUrl;
+    if (!baseUrl || typeof _cplace_languages_ === 'undefined') return;
     var available = _cplace_languages_.sortedIds;
     var chosen = prompt(
       'Change user language to [' + available.join(', ') + ']?',
@@ -22,7 +24,7 @@
     formData.append('serializedControlStates', JSON.stringify({ [paramName]: param }));
     for (var key in param) formData.append(key, param[key]);
     jQuery.ajax({
-      url: _context_ + 'functions/submitFeatureAngular',
+      url: baseUrl + '/functions/submitFeatureAngular',
       data: formData,
       processData: false,
       contentType: false,

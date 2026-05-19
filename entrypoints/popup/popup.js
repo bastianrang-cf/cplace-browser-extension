@@ -5,12 +5,11 @@ async function init() {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
 
   let baseUrl = null;
-  if (tab?.url) {
-    try {
-      const u = new URL(tab.url);
-      const tenant = u.pathname.split('/').filter(Boolean)[0];
-      baseUrl = tenant ? `${u.origin}/${tenant}` : u.origin;
-    } catch (_) {}
+  if (tab?.id != null) {
+    const baseInfo = await browser.tabs
+      .sendMessage(tab.id, { type: 'cplace:getBaseUrl' })
+      .catch(() => null);
+    baseUrl = baseInfo?.baseUrl ?? null;
   }
 
   const storedMap = await enabledModulesItem.getValue();

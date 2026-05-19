@@ -3,6 +3,7 @@ const DIALOG_ID = 'cplace-system-info-dialog';
 let onResult = null;
 let onKey = null;
 let active = false;
+let currentContext = null;
 
 function formatBuildTime(raw) {
   if (!raw) return raw;
@@ -195,7 +196,8 @@ export default {
   css: true,
   pageScript: true,
   actions: [{ id: 'show-system-info', label: 'System Info', icon: 'ℹ️' }],
-  apply() {
+  apply(_options = {}, context = null) {
+    currentContext = context;
     if (active) return;
     active = true;
     onResult = (event) => {
@@ -218,11 +220,17 @@ export default {
     onResult = null;
     onKey = null;
     active = false;
+    currentContext = null;
     closeDialog();
+  },
+  onVersionDetected(context) {
+    currentContext = context;
   },
   onAction(actionId) {
     if (actionId === 'show-system-info') {
-      document.dispatchEvent(new CustomEvent('cplace:fetchSystemInfo'));
+      document.dispatchEvent(new CustomEvent('cplace:fetchSystemInfo', {
+        detail: { baseUrl: currentContext?.baseUrl ?? null },
+      }));
     }
   },
 };

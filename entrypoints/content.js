@@ -2,13 +2,14 @@ import { defineContentScript, injectScript } from '#imports';
 import { registry } from '../features/registry.js';
 import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../features/utils.js';
 import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
+import { deriveBaseUrl } from '../features/base-url.js';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
   runAt: 'document_idle',
   main() {
     const activeModules = new Set();
-    let lastVersionInfo = null;
+    let lastContext = null;
     let moduleOptions = {};
 
     function getEnabledMap(stored) {
@@ -16,9 +17,9 @@ export default defineContentScript({
       return { ...defaults, ...(stored || {}) };
     }
 
-    function notifyVersionDetected(mod) {
-      if (lastVersionInfo && typeof mod.onVersionDetected === 'function') {
-        try { mod.onVersionDetected(lastVersionInfo); } catch (e) {
+    function notifyContextDetected(mod) {
+      if (lastContext && typeof mod.onVersionDetected === 'function') {
+        try { mod.onVersionDetected(lastContext); } catch (e) {
           console.warn('[cplace] module onVersionDetected failed:', mod.id, e);
         }
       }
@@ -32,12 +33,12 @@ export default defineContentScript({
         try {
           if (mod.css) injectModuleCSS(mod.id);
           if (mod.pageScript) injectPageScript(mod.id);
-          mod.apply?.(moduleOptions[id] || {});
+          mod.apply?.(moduleOptions[id] || {}, lastContext);
           activeModules.add(id);
         } catch (e) {
           console.warn('[cplace] module apply failed:', id, e);
         }
-        notifyVersionDetected(mod);
+        notifyContextDetected(mod);
       } else if (!enabled && isActive) {
         try {
           mod.revert?.();
@@ -63,12 +64,16 @@ export default defineContentScript({
     let versionInjected = false;
 
     document.addEventListener('cplace:versionDetected', (event) => {
-      const version = event.detail?.version || null;
-      const tenant = location.pathname.split('/').filter(Boolean)[0] || null;
-      lastVersionInfo = { version, hostname: location.hostname, tenant };
+      const detail = event.detail || {};
+      const baseInfo = deriveBaseUrl({
+        origin: location.origin,
+        hostname: location.hostname,
+        context: detail.context ?? null,
+      });
+      lastContext = { version: detail.version || null, ...baseInfo };
       for (const mod of registry.all()) {
         if (activeModules.has(mod.id) && typeof mod.onVersionDetected === 'function') {
-          try { mod.onVersionDetected(lastVersionInfo); } catch (e) {
+          try { mod.onVersionDetected(lastContext); } catch (e) {
             console.warn('[cplace] module onVersionDetected failed:', mod.id, e);
           }
         }
@@ -120,7 +125,7 @@ export default defineContentScript({
           const mod = registry.byId(msg.id);
           try {
             mod?.revert?.();
-            mod?.apply?.(moduleOptions[msg.id]);
+            mod?.apply?.(moduleOptions[msg.id], lastContext);
           } catch (e) {
             console.warn('[cplace] module options update failed:', msg.id, e);
           }
@@ -131,10 +136,14 @@ export default defineContentScript({
         const mod = registry.byId(msg.moduleId);
         if (!mod || !activeModules.has(msg.moduleId) || typeof mod.onAction !== 'function') return;
         try {
-          mod.onAction(msg.actionId);
+          mod.onAction(msg.actionId, lastContext);
         } catch (e) {
           console.warn('[cplace] module action failed:', msg.moduleId, msg.actionId, e);
         }
+        return;
+      }
+      if (msg.type === 'cplace:getBaseUrl') {
+        return Promise.resolve(lastContext);
       }
     });
 
