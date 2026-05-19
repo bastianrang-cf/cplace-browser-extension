@@ -35,7 +35,11 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npm run package
+
+      - name: Package release assets (with stable extension key)
+        env:
+          CPLACE_RELEASE_BUILD: 'true'
+        run: npm run package
 
       - name: Upload zip to release
         env:
@@ -45,11 +49,19 @@ jobs:
             .output/*.zip \
             --clobber
 
+      - name: Re-package without manifest key for Chrome Web Store
+        if: env.CHROME_CLIENT_ID != ''
+        env:
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+        run: |
+          rm -rf .output
+          npm run package
+
       - name: Submit to Chrome Web Store
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-        if: env.CHROME_CLIENT_ID != '' 
+        if: env.CHROME_CLIENT_ID != ''
         run: npx wxt submit --chrome-zip .output/*-chrome.zip
