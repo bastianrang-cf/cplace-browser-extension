@@ -53,6 +53,28 @@ button:hover {
   opacity: 0.65;
 }
 
+#activation-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+}
+
+#activation-gate .gate-msg {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+#activation-gate .gate-btn {
+  justify-content: center;
+  background: AccentColor;
+  color: AccentColorText;
+  border-color: transparent;
+  font-weight: 600;
+}
+
 /* ── Navigation link group (accordion) ─────────────────────── */
 
 .nav-group {

@@ -1,7 +1,43 @@
 import { registry } from '../../features/registry.js';
 import { enabledModulesItem, moduleOptionsItem } from '../../features/storage.js';
+import {
+  hasUniversalHostAccess,
+  requestUniversalHostAccess,
+  revokeUniversalHostAccess,
+} from '../../features/permissions.js';
 
 const list = document.getElementById('module-list');
+const hostSection = document.getElementById('host-access');
+const hostStatus = document.getElementById('host-access-status');
+const hostGrantBtn = document.getElementById('host-access-grant');
+const hostRevokeBtn = document.getElementById('host-access-revoke');
+
+async function renderHostAccess() {
+  const granted = await hasUniversalHostAccess();
+  hostSection.hidden = false;
+  hostStatus.dataset.state = granted ? 'granted' : 'missing';
+  hostStatus.textContent = granted
+    ? 'The extension is active on all pages.'
+    : 'The extension needs permission to read pages so it can detect cplace. Enable it once below.';
+  hostGrantBtn.hidden = granted;
+  hostRevokeBtn.hidden = !granted;
+  list.setAttribute('aria-disabled', granted ? 'false' : 'true');
+}
+
+hostGrantBtn.addEventListener('click', async () => {
+  const accepted = await requestUniversalHostAccess();
+  if (accepted) renderHostAccess();
+});
+
+hostRevokeBtn.addEventListener('click', async () => {
+  await revokeUniversalHostAccess();
+  renderHostAccess();
+});
+
+browser.permissions.onAdded.addListener(renderHostAccess);
+browser.permissions.onRemoved.addListener(renderHostAccess);
+
+renderHostAccess();
 
 function buildOptionInput(opt, currentValue) {
   const input = document.createElement('input');
