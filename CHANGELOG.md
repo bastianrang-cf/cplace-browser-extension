@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.14.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.13.2...v0.14.0) (2026-05-19)
+
+
+### Features
+
+* centralize base URL / instance / tenant detection in the core ([#75](https://github.com/bastianrang-cf/cplace-browser-extension/issues/75)) ([9a6f3ea](https://github.com/bastianrang-cf/cplace-browser-extension/commit/9a6f3eadb453bc95de74ca05a6137f4559c02d6c))
+
+
+### Bug Fixes
+
+* only include manifest key in development builds ([#78](https://github.com/bastianrang-cf/cplace-browser-extension/issues/78)) ([b4e9104](https://github.com/bastianrang-cf/cplace-browser-extension/commit/b4e9104ba12908944aeb6ee5c7ef4944856088f7))
+
+
+### Performance Improvements
+
+* share batch-jobs poll results across same-instance tabs via a baseUrl-keyed cache ([#77](https://github.com/bastianrang-cf/cplace-browser-extension/issues/77)) ([2c8f7e7](https://github.com/bastianrang-cf/cplace-browser-extension/commit/2c8f7e7ed69e3998c3092fc0bb235288a888d45b))
+
 ## [0.13.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.13.1...v0.13.2) (2026-05-18)
 
 
