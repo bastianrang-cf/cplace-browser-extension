@@ -7,6 +7,10 @@ async function loadBackground() {
   return mod;
 }
 
+let permissionsListeners;
+let permissionsContainsMock;
+let scriptingMocks;
+
 beforeEach(async () => {
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.action, 'enable').mockResolvedValue(undefined);
@@ -16,6 +20,25 @@ beforeEach(async () => {
   vi.spyOn(fakeBrowser.action, 'setBadgeText').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.action, 'setBadgeBackgroundColor').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.tabs, 'sendMessage').mockResolvedValue(undefined);
+
+  permissionsListeners = { added: [], removed: [] };
+  permissionsContainsMock = vi.fn().mockResolvedValue(false);
+  fakeBrowser.permissions = {
+    contains: permissionsContainsMock,
+    request: vi.fn().mockResolvedValue(true),
+    remove: vi.fn().mockResolvedValue(true),
+    onAdded: { addListener: (fn) => permissionsListeners.added.push(fn) },
+    onRemoved: { addListener: (fn) => permissionsListeners.removed.push(fn) },
+  };
+  scriptingMocks = {
+    getRegisteredContentScripts: vi.fn().mockResolvedValue([]),
+    registerContentScripts: vi.fn().mockResolvedValue(undefined),
+    unregisterContentScripts: vi.fn().mockResolvedValue(undefined),
+  };
+  fakeBrowser.scripting = scriptingMocks;
+
+  fakeBrowser.runtime.openOptionsPage = vi.fn().mockResolvedValue(undefined);
+
   vi.resetModules();
 });
 
@@ -233,6 +256,92 @@ describe('background — onMessage: cplace:moduleToggle', () => {
 
     expect(fakeBrowser.tabs.sendMessage).toHaveBeenCalledTimes(1);
     expect(fakeBrowser.tabs.sendMessage).toHaveBeenCalledWith(5, msg);
+  });
+});
+
+describe('background — content-script registration', () => {
+  it('registers the content script on startup when permission is already granted', async () => {
+    permissionsContainsMock.mockResolvedValue(true);
+    await loadBackground();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.registerContentScripts).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'cplace-content',
+        js: ['content-scripts/content.js'],
+        matches: ['<all_urls>'],
+        runAt: 'document_idle',
+      }),
+    ]);
+  });
+
+  it('does not register on startup when permission is missing', async () => {
+    permissionsContainsMock.mockResolvedValue(false);
+    await loadBackground();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.registerContentScripts).not.toHaveBeenCalled();
+  });
+
+  it('registers when a permission grant fires onAdded', async () => {
+    permissionsContainsMock.mockResolvedValue(false);
+    await loadBackground();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(scriptingMocks.registerContentScripts).not.toHaveBeenCalled();
+
+    permissionsContainsMock.mockResolvedValue(true);
+    for (const fn of permissionsListeners.added) fn({ origins: ['<all_urls>'] });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.registerContentScripts).toHaveBeenCalledTimes(1);
+  });
+
+  it('unregisters when a permission revoke fires onRemoved', async () => {
+    permissionsContainsMock.mockResolvedValue(true);
+    scriptingMocks.getRegisteredContentScripts.mockResolvedValue([{ id: 'cplace-content' }]);
+    await loadBackground();
+    await new Promise((r) => setTimeout(r, 0));
+
+    permissionsContainsMock.mockResolvedValue(false);
+    for (const fn of permissionsListeners.removed) fn({ origins: ['<all_urls>'] });
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.unregisterContentScripts).toHaveBeenCalledWith({ ids: ['cplace-content'] });
+  });
+
+  it('is idempotent: does not re-register when already registered', async () => {
+    permissionsContainsMock.mockResolvedValue(true);
+    scriptingMocks.getRegisteredContentScripts.mockResolvedValue([{ id: 'cplace-content' }]);
+    await loadBackground();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.registerContentScripts).not.toHaveBeenCalled();
+  });
+});
+
+describe('background — onInstalled onboarding', () => {
+  it('opens the options page on fresh install when permission is missing', async () => {
+    permissionsContainsMock.mockResolvedValue(false);
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'install' });
+
+    expect(fakeBrowser.runtime.openOptionsPage).toHaveBeenCalled();
+  });
+
+  it('does not open the options page on update', async () => {
+    permissionsContainsMock.mockResolvedValue(false);
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    expect(fakeBrowser.runtime.openOptionsPage).not.toHaveBeenCalled();
+  });
+
+  it('does not open the options page when permission is already granted on install', async () => {
+    permissionsContainsMock.mockResolvedValue(true);
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'install' });
+
+    expect(fakeBrowser.runtime.openOptionsPage).not.toHaveBeenCalled();
   });
 });
 

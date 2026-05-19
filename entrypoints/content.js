@@ -5,7 +5,7 @@ import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
 import { deriveBaseUrl } from '../features/base-url.js';
 
 export default defineContentScript({
-  matches: ['<all_urls>'],
+  registration: 'runtime',
   runAt: 'document_idle',
   main() {
     const activeModules = new Set();

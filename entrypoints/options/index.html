@@ -10,6 +10,19 @@
       <h1>cplace extension</h1>
       <p class="lead">Enable or disable optional modules. Changes apply immediately to open tabs.</p>
 
+      <section id="host-access" class="host-access" hidden>
+        <h2>Page access</h2>
+        <p id="host-access-status" class="host-access__status"></p>
+        <div class="host-access__actions">
+          <button type="button" id="host-access-grant" class="host-access__grant" hidden>
+            Enable on all pages
+          </button>
+          <button type="button" id="host-access-revoke" class="host-access__revoke" hidden>
+            Revoke access
+          </button>
+        </div>
+      </section>
+
       <section>
         <h2>Modules</h2>
         <ul id="module-list" class="modules"></ul>

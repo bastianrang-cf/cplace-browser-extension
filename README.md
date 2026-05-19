@@ -25,6 +25,12 @@ Enable or disable modules on the **Options** page (`chrome://extensions` → cpl
 
 ---
 
+## First-run setup: page access
+
+The extension asks for page access **on demand** rather than at install time. After installing, the options page opens automatically with an **Enable on all pages** button — click it once and confirm Chrome's prompt to let the extension detect cplace on the sites you visit. Until you do, the toolbar icon stays inactive and the modules cannot run. You can revoke access at any time from the same options panel.
+
+---
+
 ## Installation
 
 ### From the Chrome Web Store / Edge Add-ons store

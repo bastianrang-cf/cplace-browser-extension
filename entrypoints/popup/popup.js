@@ -1,7 +1,37 @@
 import { registry } from '../../features/registry.js';
 import { enabledModulesItem } from '../../features/storage.js';
+import { hasUniversalHostAccess, requestUniversalHostAccess } from '../../features/permissions.js';
+
+function renderActivationGate(container) {
+  const wrap = document.createElement('div');
+  wrap.id = 'activation-gate';
+
+  const msg = document.createElement('p');
+  msg.className = 'gate-msg';
+  msg.textContent = 'Activate the extension to detect cplace on this and other pages.';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'gate-btn';
+  btn.textContent = 'Enable on all pages';
+  btn.addEventListener('click', async () => {
+    const accepted = await requestUniversalHostAccess();
+    if (accepted) window.close();
+  });
+
+  wrap.appendChild(msg);
+  wrap.appendChild(btn);
+  container.appendChild(wrap);
+}
 
 async function init() {
+  const container = document.getElementById('actions');
+
+  if (!(await hasUniversalHostAccess())) {
+    renderActivationGate(container);
+    return;
+  }
+
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
 
   let baseUrl = null;
@@ -29,7 +59,6 @@ async function init() {
     }
   }
 
-  const container = document.getElementById('actions');
   const hasContent = actionItems.length > 0 || (navLinksMods.length > 0 && baseUrl != null);
   if (!hasContent) {
     const msg = document.createElement('p');

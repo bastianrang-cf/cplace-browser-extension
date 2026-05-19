@@ -1,9 +1,49 @@
 import { defineBackground } from '#imports';
 import { registry } from '../features/registry.js';
 import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
+import { hasUniversalHostAccess } from '../features/permissions.js';
+
+const CONTENT_SCRIPT_ID = 'cplace-content';
+
+async function ensureContentScriptRegistration() {
+  const granted = await hasUniversalHostAccess();
+  const existing = await browser.scripting
+    .getRegisteredContentScripts({ ids: [CONTENT_SCRIPT_ID] })
+    .catch(() => []);
+  const isRegistered = existing.some((cs) => cs.id === CONTENT_SCRIPT_ID);
+
+  if (granted && !isRegistered) {
+    await browser.scripting.registerContentScripts([
+      {
+        id: CONTENT_SCRIPT_ID,
+        js: ['content-scripts/content.js'],
+        matches: ['<all_urls>'],
+        runAt: 'document_idle',
+        allFrames: false,
+      },
+    ]);
+  } else if (!granted && isRegistered) {
+    await browser.scripting.unregisterContentScripts({ ids: [CONTENT_SCRIPT_ID] });
+  }
+}
 
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener(async () => {
+  ensureContentScriptRegistration().catch((e) => {
+    console.warn('[cplace] initial content-script registration failed:', e);
+  });
+
+  browser.permissions.onAdded.addListener(() => {
+    ensureContentScriptRegistration().catch((e) => {
+      console.warn('[cplace] content-script registration after grant failed:', e);
+    });
+  });
+  browser.permissions.onRemoved.addListener(() => {
+    ensureContentScriptRegistration().catch((e) => {
+      console.warn('[cplace] content-script unregistration after revoke failed:', e);
+    });
+  });
+
+  browser.runtime.onInstalled.addListener(async (details) => {
     const enabledDefaults = registry.defaultEnabledMap();
     const currentEnabled = await enabledModulesItem.getValue();
     let enabledChanged = false;
@@ -32,6 +72,13 @@ export default defineBackground(() => {
       }
     }
     if (optionsChanged) await moduleOptionsItem.setValue(currentOptions);
+
+    if (details.reason === 'install') {
+      const granted = await hasUniversalHostAccess();
+      if (!granted) {
+        await browser.runtime.openOptionsPage().catch(() => {});
+      }
+    }
   });
 
   browser.runtime.onMessage.addListener((msg, sender) => {

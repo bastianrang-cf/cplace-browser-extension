@@ -26,9 +26,21 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create a manual `m
 
 ## Architecture
 
+### Host access is opt-in (no static `<all_urls>`)
+
+The manifest deliberately does **not** declare static `host_permissions` or `content_scripts` matches. Instead:
+
+- `wxt.config.js` declares `optional_host_permissions: ['<all_urls>']` and adds `'scripting'` to `permissions`.
+- `entrypoints/content.js` uses `defineContentScript({ registration: 'runtime', ... })` — WXT builds the script to `content-scripts/content.js` but does **not** add it to the manifest or to `host_permissions`.
+- `entrypoints/background.js` calls `ensureContentScriptRegistration()` on startup and on every `browser.permissions.onAdded` / `onRemoved` event. It uses `browser.scripting.registerContentScripts` (id `cplace-content`) when the user has granted `<all_urls>` and `unregisterContentScripts` when they revoke.
+- `entrypoints/popup/popup.js` and `entrypoints/options/options.js` show an **Enable on all pages** button that calls `browser.permissions.request({ origins: ['<all_urls>'] })` directly from a user-gesture click handler (Chrome rejects the request otherwise). The shared wrappers live in `features/permissions.js`.
+- On fresh install, `background.js` opens the options page if the permission has not been granted yet.
+
+The motivation is Chrome Web Store review time: static `<all_urls>` triggers a heavyweight review, while `optional_host_permissions` does not. After the user grants, the UX is identical to the previous static-permission build.
+
 ### Core vs feature modules
 
-- **Core** (always on): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set.
+- **Core** (always on, once host access is granted): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set.
 - **Feature modules** (opt-in, in `features/`): each lives in `features/<id>/index.js` and exports a default descriptor `{ id, name, description, defaultEnabled, ...flags }`. `features/registry.js` auto-discovers all features and exposes `{ all(), byId(id), defaultEnabledMap() }`.
 
 > Naming: the root `modules/` directory is reserved by WXT for **build modules** (project-local Vite/WXT extensions). Domain feature toggles therefore live in `features/`. A WXT build module at `modules/cplace-features.js` is what wires per-feature assets into the build output.
