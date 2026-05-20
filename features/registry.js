@@ -24,9 +24,15 @@ export const registry = {
   defaultOptionsMap() {
     const out = {};
     for (const m of modules) {
-      if (!Array.isArray(m.options) || m.options.length === 0) continue;
-      out[m.id] = {};
-      for (const opt of m.options) out[m.id][opt.id] = opt.default;
+      const fromDefaults = m.defaultOptions && typeof m.defaultOptions === 'object'
+        ? structuredClone(m.defaultOptions)
+        : null;
+      const fromArray = Array.isArray(m.options) && m.options.length > 0;
+      if (!fromDefaults && !fromArray) continue;
+      out[m.id] = fromDefaults || {};
+      if (fromArray) {
+        for (const opt of m.options) out[m.id][opt.id] = opt.default;
+      }
     }
     return out;
   },

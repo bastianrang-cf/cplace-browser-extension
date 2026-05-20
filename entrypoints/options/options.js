@@ -1,5 +1,7 @@
 import { registry } from '../../features/registry.js';
 import { enabledModulesItem, moduleOptionsItem } from '../../features/storage.js';
+
+let liveOpts = {};
 import {
   hasUniversalHostAccess,
   requestUniversalHostAccess,
@@ -55,6 +57,7 @@ function buildOptionInput(opt, currentValue) {
 }
 
 function render(enabled, savedOpts) {
+  liveOpts = savedOpts;
   list.textContent = '';
   for (const mod of registry.all()) {
     const li = document.createElement('li');
@@ -80,7 +83,23 @@ function render(enabled, savedOpts) {
     label.appendChild(text);
     li.appendChild(label);
 
-    if (Array.isArray(mod.options) && mod.options.length > 0) {
+    if (typeof mod.renderOptions === 'function') {
+      const optionsDiv = document.createElement('div');
+      optionsDiv.className = 'module-options';
+      const defaults = registry.defaultOptionsMap()[mod.id] || {};
+      mod.renderOptions(optionsDiv, {
+        getOptions: () => liveOpts[mod.id] ?? defaults,
+        setOptions: async (next) => {
+          liveOpts[mod.id] = next;
+          const current = await moduleOptionsItem.getValue();
+          current[mod.id] = next;
+          await moduleOptionsItem.setValue(current);
+          browser.runtime.sendMessage({ type: 'cplace:moduleOptions', id: mod.id, options: next });
+        },
+        getDefaults: () => defaults,
+      });
+      li.appendChild(optionsDiv);
+    } else if (Array.isArray(mod.options) && mod.options.length > 0) {
       const modOpts = savedOpts[mod.id] || {};
       const optionsDiv = document.createElement('div');
       optionsDiv.className = 'module-options';

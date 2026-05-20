@@ -14,8 +14,8 @@ A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions.
 
 | Module | Default | Description |
 |---|---|---|
-| Admin access highlight | off | Shows a red page border when the logged-in user has cplace admin access |
 | Batch Jobs overlay | off | Shows a live overlay of running batch jobs on every cplace page, polling every 15 s while the tab is visible |
+| Domain CSS injection | off | Inject custom CSS on cplace pages matching a hostname/path glob — environment labels (DEV/TEST badges), admin-access highlighting, per-tenant visuals. Ships with a default admin-border rule. |
 | Language Switcher | off | Switch the cplace display language from the extension popup |
 | Navigation Links | on | Adds a popup submenu with quick links to common cplace pages (Workspaces, Packages, Batch Jobs, Low-Code Dashboard, Deleted Items, Activity Stream, My Drafts) |
 | Show system version as badge | on | Displays the detected cplace version number as a badge on the toolbar icon |
@@ -76,7 +76,7 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create one manuall
 
 ### Core detection
 
-`entrypoints/content.js` checks for `#cplace` on page load and via a debounced `MutationObserver` (250 ms), so it works correctly on single-page applications. It messages `entrypoints/background.js`, which calls `browser.action.setIcon()` per-tab and shows/hides the popup accordingly.
+`entrypoints/content.js` checks for `#cplace` on page load and via a debounced `MutationObserver` (250 ms), so it works correctly on single-page applications. It messages `entrypoints/background.js`, which calls `browser.action.setIcon()` per-tab and shows/hides the popup accordingly. The same detection also **gates feature-module activation**: modules only run on cplace pages, and the core reverts them automatically if `#cplace` disappears.
 
 ### Module system
 
@@ -90,12 +90,12 @@ export default {
   defaultEnabled: false,
   css: true,        // optional — auto-injects features/<id>/module.css
   pageScript: true, // optional — auto-injects features/<id>/page.js
-  apply()  { /* optional — activate beyond asset injection; must be idempotent */ },
-  revert() { /* optional — undo apply exactly */ },
+  apply()  { /* optional — activate beyond asset injection; must be idempotent. Only called on cplace pages. */ },
+  revert() { /* optional — undo apply exactly. Called on disable or when #cplace disappears. */ },
 };
 ```
 
-`features/registry.js` auto-discovers all `features/*/index.js` files. The background seeds the typed storage items (`enabledModulesItem`, `moduleOptionsItem` from `features/storage.js`, backed by `local:` storage) on first install. The content script reads them, calls `apply()` / `revert()` on toggles, and listens for live `cplace:moduleToggle` messages broadcast by the background when settings change.
+`features/registry.js` auto-discovers all `features/*/index.js` files. The background seeds the typed storage items (`enabledModulesItem`, `moduleOptionsItem` from `features/storage.js`, backed by `local:` storage) on first install. The content script reads them, gates activation on `#cplace` detection, calls `apply()` / `revert()` accordingly, and listens for live `cplace:moduleToggle` messages broadcast by the background when settings change. Features should **not** add their own `MutationObserver` or `#cplace` check — the core already does that.
 
 ### Adding a new module
 

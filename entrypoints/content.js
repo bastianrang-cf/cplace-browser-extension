@@ -10,7 +10,9 @@ export default defineContentScript({
   main() {
     const activeModules = new Set();
     let lastContext = null;
+    let lastFound = null;
     let moduleOptions = {};
+    let desiredEnabled = {};
 
     function getEnabledMap(stored) {
       const defaults = registry.defaultEnabledMap();
@@ -26,10 +28,12 @@ export default defineContentScript({
     }
 
     function applyModuleState(id, enabled) {
+      desiredEnabled[id] = enabled;
       const mod = registry.byId(id);
       if (!mod) return;
       const isActive = activeModules.has(id);
-      if (enabled && !isActive) {
+      const shouldBeActive = enabled && lastFound === true;
+      if (shouldBeActive && !isActive) {
         try {
           if (mod.css) injectModuleCSS(mod.id);
           if (mod.pageScript) injectPageScript(mod.id);
@@ -39,7 +43,7 @@ export default defineContentScript({
           console.warn('[cplace] module apply failed:', id, e);
         }
         notifyContextDetected(mod);
-      } else if (!enabled && isActive) {
+      } else if (!shouldBeActive && isActive) {
         try {
           mod.revert?.();
           if (mod.css) removeModuleCSS(mod.id);
@@ -53,14 +57,20 @@ export default defineContentScript({
 
     function applyAll(stored) {
       const enabled = getEnabledMap(stored);
+      desiredEnabled = enabled;
       for (const mod of registry.all()) {
         applyModuleState(mod.id, !!enabled[mod.id]);
       }
     }
 
+    function reconcileAfterCplaceChange() {
+      for (const mod of registry.all()) {
+        applyModuleState(mod.id, !!desiredEnabled[mod.id]);
+      }
+    }
+
     // --- Core detection ---
 
-    let lastFound = null;
     let versionInjected = false;
 
     document.addEventListener('cplace:versionDetected', (event) => {
@@ -89,6 +99,7 @@ export default defineContentScript({
       } catch (_) {
         // service worker may be asleep; safe to ignore — next check will retry
       }
+      reconcileAfterCplaceChange();
       if (found && !versionInjected) {
         versionInjected = true;
         injectScript('/detect-version-page.js', { keepInDom: true }).catch(() => {});

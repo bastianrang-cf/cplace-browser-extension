@@ -40,24 +40,27 @@ The motivation is Chrome Web Store review time: static `<all_urls>` triggers a h
 
 ### Core vs feature modules
 
-- **Core** (always on, once host access is granted): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set.
+- **Core** (always on, once host access is granted): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background, and **gates feature-module activation on detection**. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set, and handles `cplace:domainCss:apply` / `:revert` messages via `browser.scripting.insertCSS` / `removeCSS` with per-tab state in `chrome.storage.session`.
 - **Feature modules** (opt-in, in `features/`): each lives in `features/<id>/index.js` and exports a default descriptor `{ id, name, description, defaultEnabled, ...flags }`. `features/registry.js` auto-discovers all features and exposes `{ all(), byId(id), defaultEnabledMap() }`.
 
 > Naming: the root `modules/` directory is reserved by WXT for **build modules** (project-local Vite/WXT extensions). Domain feature toggles therefore live in `features/`. A WXT build module at `modules/cplace-features.js` is what wires per-feature assets into the build output.
 
 ### Module lifecycle
 
-1. On install, `background.js` seeds the typed storage items in `features/storage.js` (`enabledModulesItem`, `moduleOptionsItem`) from `registry.defaultEnabledMap()` / `registry.defaultOptionsMap()` (only fills gaps; existing keys are preserved).
-2. Content script reads those items on load and applies each enabled module — injecting declared assets (CSS, page scripts) then calling `apply()`. State is tracked in a per-tab `Set` so toggles are idempotent.
+1. On install, `background.js` seeds the typed storage items in `features/storage.js` (`enabledModulesItem`, `moduleOptionsItem`) from `registry.defaultEnabledMap()` / `registry.defaultOptionsMap()` (only fills gaps; existing keys are preserved). A descriptor may declare `defaultOptions: { ... }` for non-row-based options (e.g. `domain-css`'s seeded rule list); the registry merges it into `defaultOptionsMap()`.
+2. Content script reads those items on load and applies each enabled module — injecting declared assets (CSS, page scripts) then calling `apply()`. **Modules are only applied on cplace pages**: activation is gated on the core `#cplace` detection (`lastFound === true`). When `#cplace` appears or disappears in the DOM, the core reconciles all modules accordingly — applying enabled-but-inactive ones, reverting active-but-no-longer-allowed ones. The desired enabled state (storage + toggle messages) is tracked separately from the active set, so a toggle received on a non-cplace page is remembered and takes effect once `#cplace` is detected. State is tracked in a per-tab `Set` so toggles are idempotent.
 3. Options page writes to the same storage items and sends `{ type: 'cplace:moduleToggle', id, enabled }` to the background, which fans out via `browser.tabs.sendMessage` to every tab. Content scripts also call `enabledModulesItem.watch(...)` as a backstop.
+
+**Implication for feature authors:** do not implement your own `#cplace` detection or MutationObserver. If `apply()` has been called, the page is a cplace page; if `revert()` is called, it isn't (any longer). Features react to user/options state — the core handles the page-applicability gate.
 
 ### Adding a new feature module
 
 1. Create a `features/<id>/` directory containing:
-   - `index.js` — default export with `id`, `name`, `description`, `defaultEnabled`, and optional asset flags (see below). Add `apply()` / `revert()` only for business logic beyond asset injection; both are optional.
+   - `index.js` — default export with `id`, `name`, `description`, `defaultEnabled`, and optional asset flags (see below). Add `apply()` / `revert()` only for business logic beyond asset injection; both are optional. `apply()` is called only when the page contains `#cplace`; `revert()` is called when the module is disabled or when `#cplace` goes away.
    - `index.test.js` — Vitest tests for the feature (picked up automatically).
    - `module.css` *(optional)* — styles; declare `css: true` in the descriptor to have the framework auto-inject/remove them.
    - `page.js` *(optional)* — page-world IIFE; declare `pageScript: true` in the descriptor to have the framework auto-inject/remove it.
+   - `defaultOptions: {...}` *(optional, on the descriptor)* — initial option values written to `moduleOptionsItem` on first install. Use this for bespoke option shapes that don't fit the simple `options: [...]` array (e.g. arrays of records). Use it together with `renderOptions(container, ctx)` to draw a custom editor in the Options page; ctx exposes `getOptions()`, `setOptions(next)`, and `getDefaults()`. Without `renderOptions`, the Options page falls back to the default per-option loop driven by the `options: [...]` array.
 
 That's it — the registry auto-discovers all `features/*/index.js` files via `import.meta.glob`. No other files need to change.
 

@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { registry } from '../features/registry.js';
-import adminAccessHighlight from '../features/admin-access-highlight/index.js';
+import versionBadge from '../features/version-badge/index.js';
 
 describe('registry', () => {
   describe('all()', () => {
     it('returns all registered modules', () => {
       const modules = registry.all();
       expect(modules.length).toBeGreaterThan(0);
-      expect(modules.some((m) => m.id === 'admin-access-highlight')).toBe(true);
+      expect(modules.some((m) => m.id === 'domain-css')).toBe(true);
     });
 
     it('returns a shallow copy — mutating result does not affect registry', () => {
@@ -20,8 +20,8 @@ describe('registry', () => {
 
   describe('byId()', () => {
     it('returns the correct module by id', () => {
-      const mod = registry.byId('admin-access-highlight');
-      expect(mod).toBe(adminAccessHighlight);
+      const mod = registry.byId('version-badge');
+      expect(mod).toBe(versionBadge);
     });
 
     it('returns undefined for an unknown id', () => {
@@ -39,14 +39,16 @@ describe('registry', () => {
 
     it('maps defaultEnabled truthiness correctly', () => {
       const map = registry.defaultEnabledMap();
-      expect(map['admin-access-highlight']).toBe(false);
+      expect(map['domain-css']).toBe(false);
+      expect(map['version-badge']).toBe(true);
     });
   });
 
   describe('defaultOptionsMap()', () => {
-    it('only includes modules that declare options', () => {
+    it('only includes modules that declare options or defaultOptions', () => {
       const map = registry.defaultOptionsMap();
-      expect(Object.hasOwn(map, 'admin-access-highlight')).toBe(false);
+      expect(Object.hasOwn(map, 'version-badge')).toBe(false);
+      expect(Object.hasOwn(map, 'language-switcher')).toBe(false);
     });
 
     it('includes batch-jobs with its default option values', () => {
@@ -62,6 +64,15 @@ describe('registry', () => {
           expect(map[mod.id][opt.id]).toBe(opt.default);
         }
       }
+    });
+
+    it('includes domain-css seeded rules from defaultOptions', () => {
+      const map = registry.defaultOptionsMap();
+      expect(map['domain-css']).toBeDefined();
+      expect(map['domain-css'].rules).toBeInstanceOf(Array);
+      expect(map['domain-css'].rules.length).toBeGreaterThan(0);
+      expect(map['domain-css'].rules[0]).toHaveProperty('pattern');
+      expect(map['domain-css'].rules[0]).toHaveProperty('css');
     });
   });
 });

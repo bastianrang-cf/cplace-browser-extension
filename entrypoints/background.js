@@ -1,6 +1,6 @@
 import { defineBackground } from '#imports';
 import { registry } from '../features/registry.js';
-import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, domainCssByTabItem } from '../features/storage.js';
 import { hasUniversalHostAccess } from '../features/permissions.js';
 
 const CONTENT_SCRIPT_ID = 'cplace-content';
@@ -53,7 +53,6 @@ export default defineBackground(() => {
         enabledChanged = true;
       }
     }
-    if (enabledChanged) await enabledModulesItem.setValue(currentEnabled);
 
     const optionDefaults = registry.defaultOptionsMap();
     const currentOptions = await moduleOptionsItem.getValue();
@@ -71,6 +70,23 @@ export default defineBackground(() => {
         }
       }
     }
+
+    if (details.reason === 'update') {
+      if (currentEnabled['admin-access-highlight'] === true && currentEnabled['domain-css'] !== true) {
+        currentEnabled['domain-css'] = true;
+        enabledChanged = true;
+      }
+      if ('admin-access-highlight' in currentEnabled) {
+        delete currentEnabled['admin-access-highlight'];
+        enabledChanged = true;
+      }
+      if ('admin-access-highlight' in currentOptions) {
+        delete currentOptions['admin-access-highlight'];
+        optionsChanged = true;
+      }
+    }
+
+    if (enabledChanged) await enabledModulesItem.setValue(currentEnabled);
     if (optionsChanged) await moduleOptionsItem.setValue(currentOptions);
 
     if (details.reason === 'install') {
@@ -119,6 +135,59 @@ export default defineBackground(() => {
           browser.tabs.sendMessage(tab.id, msg).catch(() => {});
         }
       });
+      return;
+    }
+
+    if (msg.type === 'cplace:domainCss:apply' && sender.tab?.id != null) {
+      applyDomainCss(sender.tab.id, msg.css || '').catch((e) => {
+        console.warn('[cplace] domain-css apply failed:', e);
+      });
+      return;
+    }
+
+    if (msg.type === 'cplace:domainCss:revert' && sender.tab?.id != null) {
+      revertDomainCss(sender.tab.id).catch((e) => {
+        console.warn('[cplace] domain-css revert failed:', e);
+      });
+      return;
+    }
+  });
+
+  async function applyDomainCss(tabId, css) {
+    const map = await domainCssByTabItem.getValue();
+    const prev = map[tabId];
+    if (prev) {
+      try { await browser.scripting.removeCSS({ target: { tabId }, css: prev }); } catch (_) {}
+    }
+    if (!css) {
+      delete map[tabId];
+      await domainCssByTabItem.setValue(map);
+      return;
+    }
+    try {
+      await browser.scripting.insertCSS({ target: { tabId }, css });
+      map[tabId] = css;
+    } catch (e) {
+      console.warn('[cplace] insertCSS failed:', e);
+      delete map[tabId];
+    }
+    await domainCssByTabItem.setValue(map);
+  }
+
+  async function revertDomainCss(tabId) {
+    const map = await domainCssByTabItem.getValue();
+    const prev = map[tabId];
+    if (!prev) return;
+    try { await browser.scripting.removeCSS({ target: { tabId }, css: prev }); } catch (_) {}
+    delete map[tabId];
+    await domainCssByTabItem.setValue(map);
+  }
+
+  browser.tabs.onRemoved.addListener(async (tabId) => {
+    const map = await domainCssByTabItem.getValue();
+    if (tabId in map) {
+      delete map[tabId];
+      await domainCssByTabItem.setValue(map);
     }
   });
 });
