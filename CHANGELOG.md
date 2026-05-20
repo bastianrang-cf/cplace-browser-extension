@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.14.2...v0.15.0) (2026-05-20)
+
+
+### Features
+
+* replace admin-access-highlight with generic domain-css feature ([#85](https://github.com/bastianrang-cf/cplace-browser-extension/issues/85)) ([0bedd68](https://github.com/bastianrang-cf/cplace-browser-extension/commit/0bedd68b6bfc715cdc7d95f2e8410acef3864012))
+
 ## [0.14.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.14.1...v0.14.2) (2026-05-19)
 
 
