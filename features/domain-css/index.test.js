@@ -5,7 +5,6 @@ import mod, { compileGlob, ruleMatches } from './index.js';
 beforeEach(() => {
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
-  // reset internal state across tests by reverting
   mod.revert();
 });
 
@@ -68,41 +67,31 @@ describe('domain-css — ruleMatches', () => {
   });
 });
 
-describe('domain-css — apply / revert / onCplaceFound', () => {
+describe('domain-css — apply / revert', () => {
   let send;
 
   beforeEach(() => {
     send = fakeBrowser.runtime.sendMessage;
     send.mockClear();
-    delete window.location;
-    window.location = new URL('https://test.cplace.cloud/foo');
-    Object.defineProperty(window.location, 'protocol', { value: 'https:', configurable: true });
   });
 
   function setLocation(href) {
-    delete window.location;
     const u = new URL(href);
-    window.location = {
-      protocol: u.protocol,
-      hostname: u.hostname,
-      pathname: u.pathname,
-      origin: u.origin,
-      href: u.href,
-    };
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        protocol: u.protocol,
+        hostname: u.hostname,
+        pathname: u.pathname,
+        origin: u.origin,
+        href: u.href,
+      },
+    });
   }
 
-  it('does not send any message when cplace is not found', () => {
+  it('sends apply with matched css', () => {
     setLocation('https://test.cplace.cloud/foo');
-    mod.apply({ rules: [{ pattern: '*', css: 'body { color: red; }' }] }, { cplaceFound: false });
-    expect(send).not.toHaveBeenCalled();
-  });
-
-  it('sends apply with matched css when cplace is found', () => {
-    setLocation('https://test.cplace.cloud/foo');
-    mod.apply(
-      { rules: [{ pattern: '*.cplace.cloud', css: 'body { color: red; }' }] },
-      { cplaceFound: true },
-    );
+    mod.apply({ rules: [{ pattern: '*.cplace.cloud', css: 'body { color: red; }' }] });
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'cplace:domainCss:apply', css: 'body { color: red; }' }),
     );
@@ -110,69 +99,42 @@ describe('domain-css — apply / revert / onCplaceFound', () => {
 
   it('omits rules whose pattern does not match the current location', () => {
     setLocation('https://other.example.com/path');
-    mod.apply(
-      { rules: [{ pattern: '*.cplace.cloud', css: 'body { color: red; }' }] },
-      { cplaceFound: true },
-    );
+    mod.apply({ rules: [{ pattern: '*.cplace.cloud', css: 'body { color: red; }' }] });
     expect(send).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: 'cplace:domainCss:apply' }),
     );
   });
 
+  it('sends nothing when no rules match', () => {
+    setLocation('https://other.example.com/path');
+    mod.apply({ rules: [{ pattern: 'something.else', css: 'a {}' }] });
+    expect(send).not.toHaveBeenCalled();
+  });
+
   it('concatenates css from multiple matching rules', () => {
     setLocation('https://test.cplace.cloud/foo');
-    mod.apply(
-      {
-        rules: [
-          { pattern: '*.cplace.cloud', css: 'a {}' },
-          { pattern: 'test.cplace.cloud', css: 'b {}' },
-        ],
-      },
-      { cplaceFound: true },
-    );
+    mod.apply({
+      rules: [
+        { pattern: '*.cplace.cloud', css: 'a {}' },
+        { pattern: 'test.cplace.cloud', css: 'b {}' },
+      ],
+    });
     const call = send.mock.calls.find((c) => c[0]?.type === 'cplace:domainCss:apply');
     expect(call[0].css).toContain('a {}');
     expect(call[0].css).toContain('b {}');
   });
 
-  it('skips chrome:// and other internal protocols', () => {
-    setLocation('chrome://extensions/');
-    mod.apply(
-      { rules: [{ pattern: '*', css: 'body { color: red; }' }] },
-      { cplaceFound: true },
-    );
-    expect(send).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'cplace:domainCss:apply' }),
-    );
-  });
-
-  it('sends revert when cplace becomes not-found after an apply', () => {
+  it('treats apply with empty rules as a revert when something was applied', () => {
     setLocation('https://test.cplace.cloud/foo');
-    mod.apply(
-      { rules: [{ pattern: '*', css: 'a {}' }] },
-      { cplaceFound: true },
-    );
+    mod.apply({ rules: [{ pattern: '*', css: 'a {}' }] });
     send.mockClear();
-    mod.onCplaceFound(false);
+    mod.apply({ rules: [] });
     expect(send).toHaveBeenCalledWith({ type: 'cplace:domainCss:revert' });
-  });
-
-  it('sends apply when cplace becomes found after rules are already set', () => {
-    setLocation('https://test.cplace.cloud/foo');
-    mod.apply(
-      { rules: [{ pattern: '*', css: 'a {}' }] },
-      { cplaceFound: false },
-    );
-    send.mockClear();
-    mod.onCplaceFound(true);
-    expect(send).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'cplace:domainCss:apply' }),
-    );
   });
 
   it('revert clears state and is idempotent', () => {
     setLocation('https://test.cplace.cloud/foo');
-    mod.apply({ rules: [{ pattern: '*', css: 'a {}' }] }, { cplaceFound: true });
+    mod.apply({ rules: [{ pattern: '*', css: 'a {}' }] });
     send.mockClear();
     mod.revert();
     expect(send).toHaveBeenCalledWith({ type: 'cplace:domainCss:revert' });
@@ -183,9 +145,9 @@ describe('domain-css — apply / revert / onCplaceFound', () => {
 
   it('does not re-send apply when computed css is unchanged', () => {
     setLocation('https://test.cplace.cloud/foo');
-    mod.apply({ rules: [{ pattern: '*', css: 'a {}' }] }, { cplaceFound: true });
+    mod.apply({ rules: [{ pattern: '*', css: 'a {}' }] });
     send.mockClear();
-    mod.onCplaceFound(true);
+    mod.apply({ rules: [{ pattern: '*', css: 'a {}' }] });
     expect(send).not.toHaveBeenCalled();
   });
 });

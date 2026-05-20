@@ -1,9 +1,5 @@
 import { seedRules } from './seed.js';
 
-const INTERNAL_PROTOCOL_RE = /^(chrome|chrome-extension|about|edge|file|moz-extension):$/i;
-
-let rules = [];
-let cplaceFound = false;
 let appliedCss = null;
 
 function escapeRegex(s) {
@@ -35,9 +31,7 @@ export function ruleMatches(rule, hostname, pathname) {
   return true;
 }
 
-function computeCss() {
-  if (!cplaceFound) return '';
-  if (INTERNAL_PROTOCOL_RE.test(location.protocol)) return '';
+function computeCss(rules) {
   const hostname = location.hostname;
   const pathname = location.pathname;
   const chunks = [];
@@ -46,18 +40,6 @@ function computeCss() {
     if (ruleMatches(rule, hostname, pathname)) chunks.push(rule.css);
   }
   return chunks.join('\n\n');
-}
-
-function reevaluate() {
-  const next = computeCss();
-  if (next === (appliedCss ?? '')) return;
-  if (next) {
-    appliedCss = next;
-    try { browser.runtime.sendMessage({ type: 'cplace:domainCss:apply', css: next }); } catch (_) {}
-  } else if (appliedCss != null) {
-    appliedCss = null;
-    try { browser.runtime.sendMessage({ type: 'cplace:domainCss:revert' }); } catch (_) {}
-  }
 }
 
 function renderEditor(container, ctx) {
@@ -175,21 +157,23 @@ const descriptor = {
     'Inject custom CSS on cplace pages matching a hostname/path glob. Use it for environment labels, admin highlighting, or other per-tenant visual cues.',
   defaultEnabled: false,
   defaultOptions: { rules: seedRules.map((r) => ({ ...r })) },
-  apply(options = {}, context = null) {
-    rules = Array.isArray(options.rules) ? options.rules : [];
-    cplaceFound = !!context?.cplaceFound;
-    reevaluate();
-  },
-  revert() {
-    rules = [];
-    if (appliedCss != null) {
+  apply(options = {}) {
+    const rules = Array.isArray(options.rules) ? options.rules : [];
+    const next = computeCss(rules);
+    if (next === (appliedCss ?? '')) return;
+    if (next) {
+      appliedCss = next;
+      try { browser.runtime.sendMessage({ type: 'cplace:domainCss:apply', css: next }); } catch (_) {}
+    } else if (appliedCss != null) {
       appliedCss = null;
       try { browser.runtime.sendMessage({ type: 'cplace:domainCss:revert' }); } catch (_) {}
     }
   },
-  onCplaceFound(found) {
-    cplaceFound = !!found;
-    reevaluate();
+  revert() {
+    if (appliedCss != null) {
+      appliedCss = null;
+      try { browser.runtime.sendMessage({ type: 'cplace:domainCss:revert' }); } catch (_) {}
+    }
   },
   renderOptions(container, ctx) {
     renderEditor(container, ctx);
