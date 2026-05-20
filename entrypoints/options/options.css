@@ -432,7 +432,8 @@ body {
   gap: 12px;
 }
 
-.domain-css-hint {
+.domain-css-hint,
+.nav-links-hint {
   margin: 0;
   font-size: 13px;
   color: var(--c-muted);

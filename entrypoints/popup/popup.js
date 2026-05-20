@@ -1,5 +1,5 @@
 import { registry } from '../../features/registry.js';
-import { enabledModulesItem } from '../../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem } from '../../features/storage.js';
 import { hasUniversalHostAccess, requestUniversalHostAccess } from '../../features/permissions.js';
 
 function renderActivationGate(container) {
@@ -42,7 +42,10 @@ async function init() {
     baseUrl = baseInfo?.baseUrl ?? null;
   }
 
-  const storedMap = await enabledModulesItem.getValue();
+  const [storedMap, optsMap] = await Promise.all([
+    enabledModulesItem.getValue(),
+    moduleOptionsItem.getValue(),
+  ]);
   const enabledMap = { ...registry.defaultEnabledMap(), ...(storedMap || {}) };
 
   const actionItems = [];
@@ -55,7 +58,9 @@ async function init() {
       }
     }
     if (mod.navLinks?.length) {
-      navLinksMods.push(mod);
+      const disabled = new Set(optsMap?.[mod.id]?.disabledPaths || []);
+      const visible = mod.navLinks.filter((l) => !disabled.has(l.path));
+      if (visible.length) navLinksMods.push({ mod, links: visible });
     }
   }
 
@@ -99,7 +104,7 @@ async function init() {
     container.appendChild(btn);
   }
 
-  for (const mod of navLinksMods) {
+  for (const { mod, links } of navLinksMods) {
     if (!baseUrl) continue;
 
     const group = document.createElement('div');
@@ -129,7 +134,7 @@ async function init() {
     list.className = 'nav-group__list';
     list.hidden = true;
 
-    for (const { label, path } of mod.navLinks) {
+    for (const { label, path } of links) {
       const a = document.createElement('a');
       a.href = baseUrl + path;
       a.textContent = label;

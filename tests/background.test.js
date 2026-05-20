@@ -75,6 +75,7 @@ describe('background — onInstalled', () => {
       moduleOptions: {
         'batch-jobs': { limitJobs: 10, pollInterval: 60 },
         'domain-css': { rules: [{ pattern: '*', css: 'body {}' }] },
+        'nav-links': { disabledPaths: [] },
       },
     });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');
