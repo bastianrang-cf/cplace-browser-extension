@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.16.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.15.0...v0.16.0) (2026-05-20)
+
+
+### Features
+
+* **nav-links:** add 3 admin links and per-link visibility toggles ([#92](https://github.com/bastianrang-cf/cplace-browser-extension/issues/92)) ([8c774fb](https://github.com/bastianrang-cf/cplace-browser-extension/commit/8c774fb3f659fcb6eeb037aca1a852fdc546b367)), closes [#89](https://github.com/bastianrang-cf/cplace-browser-extension/issues/89)
+* **options:** redesign options page with hero + sidebar layout ([#90](https://github.com/bastianrang-cf/cplace-browser-extension/issues/90)) ([6b7ef6d](https://github.com/bastianrang-cf/cplace-browser-extension/commit/6b7ef6d256e6bff02bf604b485b12e79a8a5ae4c))
+
 ## [0.15.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.14.2...v0.15.0) (2026-05-20)
 
 
