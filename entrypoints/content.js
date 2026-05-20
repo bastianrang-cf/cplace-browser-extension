@@ -10,7 +10,12 @@ export default defineContentScript({
   main() {
     const activeModules = new Set();
     let lastContext = null;
+    let lastFound = null;
     let moduleOptions = {};
+
+    function buildModuleContext() {
+      return { ...(lastContext || {}), cplaceFound: lastFound === true };
+    }
 
     function getEnabledMap(stored) {
       const defaults = registry.defaultEnabledMap();
@@ -33,7 +38,7 @@ export default defineContentScript({
         try {
           if (mod.css) injectModuleCSS(mod.id);
           if (mod.pageScript) injectPageScript(mod.id);
-          mod.apply?.(moduleOptions[id] || {}, lastContext);
+          mod.apply?.(moduleOptions[id] || {}, buildModuleContext());
           activeModules.add(id);
         } catch (e) {
           console.warn('[cplace] module apply failed:', id, e);
@@ -60,7 +65,6 @@ export default defineContentScript({
 
     // --- Core detection ---
 
-    let lastFound = null;
     let versionInjected = false;
 
     document.addEventListener('cplace:versionDetected', (event) => {
@@ -88,6 +92,14 @@ export default defineContentScript({
         browser.runtime.sendMessage({ type: 'cplace:status', found });
       } catch (_) {
         // service worker may be asleep; safe to ignore — next check will retry
+      }
+      for (const id of activeModules) {
+        const mod = registry.byId(id);
+        if (mod && typeof mod.onCplaceFound === 'function') {
+          try { mod.onCplaceFound(found); } catch (e) {
+            console.warn('[cplace] module onCplaceFound failed:', id, e);
+          }
+        }
       }
       if (found && !versionInjected) {
         versionInjected = true;
@@ -125,7 +137,7 @@ export default defineContentScript({
           const mod = registry.byId(msg.id);
           try {
             mod?.revert?.();
-            mod?.apply?.(moduleOptions[msg.id], lastContext);
+            mod?.apply?.(moduleOptions[msg.id], buildModuleContext());
           } catch (e) {
             console.warn('[cplace] module options update failed:', msg.id, e);
           }

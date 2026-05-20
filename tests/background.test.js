@@ -49,7 +49,7 @@ describe('background — onInstalled', () => {
 
     const stored = await fakeBrowser.storage.local.get('enabledModules');
     expect(stored.enabledModules).toMatchObject({
-      'admin-access-highlight': false,
+      'domain-css': false,
       'batch-jobs': false,
       'language-switcher': false,
       'version-badge': true,
@@ -57,18 +57,25 @@ describe('background — onInstalled', () => {
   });
 
   it('does not overwrite keys that already exist in storage', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': false } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'version-badge': false } });
     await loadBackground();
     await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
 
     const stored = await fakeBrowser.storage.local.get('enabledModules');
-    expect(stored.enabledModules['admin-access-highlight']).toBe(false);
+    expect(stored.enabledModules['version-badge']).toBe(false);
   });
 
   it('does not call storage.set when all keys already exist', async () => {
+    const enabledKeys = {
+      'domain-css': false, 'batch-jobs': false, 'language-switcher': false,
+      'nav-links': true, 'system-info': false, 'version-badge': true,
+    };
     await fakeBrowser.storage.local.set({
-      enabledModules: { 'admin-access-highlight': true, 'batch-jobs': false, 'language-switcher': false, 'nav-links': true, 'system-info': false, 'version-badge': true },
-      moduleOptions: { 'batch-jobs': { limitJobs: 10, pollInterval: 60 } },
+      enabledModules: enabledKeys,
+      moduleOptions: {
+        'batch-jobs': { limitJobs: 10, pollInterval: 60 },
+        'domain-css': { rules: [{ pattern: '*', css: 'body {}' }] },
+      },
     });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');
     await loadBackground();
@@ -234,7 +241,7 @@ describe('background — onMessage: cplace:moduleToggle', () => {
     await fakeBrowser.tabs.create({ url: 'https://example.com' });
     await loadBackground();
 
-    const msg = { type: 'cplace:moduleToggle', id: 'admin-access-highlight', enabled: true };
+    const msg = { type: 'cplace:moduleToggle', id: 'domain-css', enabled: true };
     await fakeBrowser.runtime.onMessage.trigger(msg, {});
 
     // Wait for the async tabs.query().then(...) chain
@@ -250,7 +257,7 @@ describe('background — onMessage: cplace:moduleToggle', () => {
     vi.spyOn(fakeBrowser.tabs, 'query').mockResolvedValue([{ id: null }, { id: 5 }]);
     await loadBackground();
 
-    const msg = { type: 'cplace:moduleToggle', id: 'admin-access-highlight', enabled: false };
+    const msg = { type: 'cplace:moduleToggle', id: 'domain-css', enabled: false };
     await fakeBrowser.runtime.onMessage.trigger(msg, {});
     await new Promise((r) => setTimeout(r, 0));
 
@@ -358,5 +365,147 @@ describe('background — onMessage: cplace:moduleOptions', () => {
       expect.any(Number),
       msg,
     );
+  });
+});
+
+describe('background — onInstalled migration', () => {
+  it('flips admin-access-highlight=true into domain-css=true on update', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'admin-access-highlight': true },
+    });
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    const stored = await fakeBrowser.storage.local.get('enabledModules');
+    expect(stored.enabledModules['domain-css']).toBe(true);
+    expect(stored.enabledModules).not.toHaveProperty('admin-access-highlight');
+  });
+
+  it('does not flip domain-css when admin-access-highlight was false', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'admin-access-highlight': false },
+    });
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    const stored = await fakeBrowser.storage.local.get('enabledModules');
+    expect(stored.enabledModules['domain-css']).toBe(false);
+    expect(stored.enabledModules).not.toHaveProperty('admin-access-highlight');
+  });
+
+  it('preserves an explicit domain-css=true when admin-access-highlight was already false', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'admin-access-highlight': false, 'domain-css': true },
+    });
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    const stored = await fakeBrowser.storage.local.get('enabledModules');
+    expect(stored.enabledModules['domain-css']).toBe(true);
+  });
+
+  it('removes legacy admin-access-highlight from moduleOptions on update', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: {},
+      moduleOptions: { 'admin-access-highlight': {}, 'batch-jobs': { limitJobs: 5 } },
+    });
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    const stored = await fakeBrowser.storage.local.get('moduleOptions');
+    expect(stored.moduleOptions).not.toHaveProperty('admin-access-highlight');
+    expect(stored.moduleOptions['batch-jobs'].limitJobs).toBe(5);
+  });
+});
+
+describe('background — onMessage: domain-css', () => {
+  it('calls scripting.insertCSS for apply messages and remembers the css', async () => {
+    scriptingMocks.insertCSS = vi.fn().mockResolvedValue(undefined);
+    scriptingMocks.removeCSS = vi.fn().mockResolvedValue(undefined);
+    await loadBackground();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'body { color: red; }' },
+      { tab: { id: 11 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.insertCSS).toHaveBeenCalledWith({
+      target: { tabId: 11 },
+      css: 'body { color: red; }',
+    });
+  });
+
+  it('removes previous CSS before inserting new CSS for the same tab', async () => {
+    scriptingMocks.insertCSS = vi.fn().mockResolvedValue(undefined);
+    scriptingMocks.removeCSS = vi.fn().mockResolvedValue(undefined);
+    await loadBackground();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'a {}' },
+      { tab: { id: 22 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'b {}' },
+      { tab: { id: 22 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.removeCSS).toHaveBeenCalledWith({
+      target: { tabId: 22 },
+      css: 'a {}',
+    });
+    expect(scriptingMocks.insertCSS).toHaveBeenLastCalledWith({
+      target: { tabId: 22 },
+      css: 'b {}',
+    });
+  });
+
+  it('calls scripting.removeCSS for revert messages', async () => {
+    scriptingMocks.insertCSS = vi.fn().mockResolvedValue(undefined);
+    scriptingMocks.removeCSS = vi.fn().mockResolvedValue(undefined);
+    await loadBackground();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'a {}' },
+      { tab: { id: 33 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:revert' },
+      { tab: { id: 33 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.removeCSS).toHaveBeenCalledWith({
+      target: { tabId: 33 },
+      css: 'a {}',
+    });
+  });
+
+  it('clears per-tab state when the tab is removed', async () => {
+    scriptingMocks.insertCSS = vi.fn().mockResolvedValue(undefined);
+    scriptingMocks.removeCSS = vi.fn().mockResolvedValue(undefined);
+    await loadBackground();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'a {}' },
+      { tab: { id: 44 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    await fakeBrowser.tabs.onRemoved.trigger(44, { windowId: 1, isWindowClosing: false });
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Apply again — should NOT call removeCSS since the previous entry was cleared.
+    scriptingMocks.removeCSS.mockClear();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'b {}' },
+      { tab: { id: 44 } },
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(scriptingMocks.removeCSS).not.toHaveBeenCalled();
   });
 });

@@ -80,45 +80,45 @@ describe('content — MutationObserver debounce', () => {
 
 describe('content — module initialization', () => {
   it('applies enabled modules after storage resolves', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': true } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': true } });
     await loadContent();
 
-    expect(document.getElementById('cplace-admin-access-highlight-link')).not.toBeNull();
+    expect(document.getElementById('cplace-system-info-link')).not.toBeNull();
   });
 
   it('does not apply disabled modules', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': false } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': false } });
     await loadContent();
 
-    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
+    expect(document.getElementById('cplace-system-info-link')).toBeNull();
   });
 });
 
 describe('content — cplace:moduleToggle listener', () => {
   it('applies a module when enabled:true message is received', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': false } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': false } });
     await loadContent();
 
     await fakeBrowser.runtime.onMessage.trigger({
       type: 'cplace:moduleToggle',
-      id: 'admin-access-highlight',
+      id: 'system-info',
       enabled: true,
     });
 
-    expect(document.getElementById('cplace-admin-access-highlight-link')).not.toBeNull();
+    expect(document.getElementById('cplace-system-info-link')).not.toBeNull();
   });
 
   it('reverts a module when enabled:false message is received', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': true } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': true } });
     await loadContent();
 
     await fakeBrowser.runtime.onMessage.trigger({
       type: 'cplace:moduleToggle',
-      id: 'admin-access-highlight',
+      id: 'system-info',
       enabled: false,
     });
 
-    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
+    expect(document.getElementById('cplace-system-info-link')).toBeNull();
   });
 
   it('ignores messages with unknown module ids', async () => {
@@ -133,18 +133,18 @@ describe('content — cplace:moduleToggle listener', () => {
   });
 
   it('ignores messages with a different type', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': false } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': false } });
     await loadContent();
     await fakeBrowser.runtime.onMessage.trigger({ type: 'other:message' });
 
-    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
+    expect(document.getElementById('cplace-system-info-link')).toBeNull();
   });
 });
 
 describe('content — cplace:moduleAction listener', () => {
   it('calls onAction when the module is active and message is received', async () => {
     await fakeBrowser.storage.local.set({
-      enabledModules: { 'admin-access-highlight': true, 'language-switcher': true },
+      enabledModules: { 'system-info': true, 'language-switcher': true },
     });
     await loadContent();
 
@@ -162,7 +162,7 @@ describe('content — cplace:moduleAction listener', () => {
 
   it('does nothing when the module is not active', async () => {
     await fakeBrowser.storage.local.set({
-      enabledModules: { 'admin-access-highlight': false, 'language-switcher': false },
+      enabledModules: { 'system-info': false, 'language-switcher': false },
     });
     await loadContent();
 
@@ -283,17 +283,105 @@ describe('content — storage.onChanged backstop', () => {
     await loadContent();
 
     // Writing to storage fires onChanged automatically in fakeBrowser
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': true } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': true } });
 
-    expect(document.getElementById('cplace-admin-access-highlight-link')).not.toBeNull();
+    expect(document.getElementById('cplace-system-info-link')).not.toBeNull();
   });
 
   it('ignores changes to areas other than local', async () => {
-    await fakeBrowser.storage.local.set({ enabledModules: { 'admin-access-highlight': false } });
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': false } });
     await loadContent();
 
-    await fakeBrowser.storage.sync.set({ enabledModules: { 'admin-access-highlight': true } });
+    await fakeBrowser.storage.sync.set({ enabledModules: { 'system-info': true } });
 
-    expect(document.getElementById('cplace-admin-access-highlight-link')).toBeNull();
+    expect(document.getElementById('cplace-system-info-link')).toBeNull();
+  });
+});
+
+describe('content — cplaceFound lifecycle hook', () => {
+  function setLocation(href) {
+    const u = new URL(href);
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        protocol: u.protocol,
+        hostname: u.hostname,
+        pathname: u.pathname,
+        origin: u.origin,
+        href: u.href,
+      },
+    });
+  }
+
+  const rule = { pattern: '*', css: 'body { color: red; }' };
+
+  it('passes cplaceFound:true in the apply context when #cplace is present at load', async () => {
+    document.body.innerHTML = '<div id="cplace"></div>';
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'domain-css': true },
+      moduleOptions: { 'domain-css': { rules: [rule] } },
+    });
+    vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
+    setLocation('https://test.cplace.cloud/');
+
+    await loadContent();
+
+    expect(fakeBrowser.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:domainCss:apply' }),
+    );
+  });
+
+  it('does not send domain-css apply when #cplace is absent at load', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'domain-css': true },
+      moduleOptions: { 'domain-css': { rules: [rule] } },
+    });
+    vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
+    setLocation('https://test.cplace.cloud/');
+
+    await loadContent();
+
+    const applyCall = fakeBrowser.runtime.sendMessage.mock.calls.find(
+      (c) => c[0]?.type === 'cplace:domainCss:apply',
+    );
+    expect(applyCall).toBeUndefined();
+  });
+
+  it('invokes onCplaceFound on active modules when lastFound flips', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'domain-css': true },
+      moduleOptions: { 'domain-css': { rules: [rule] } },
+    });
+    vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
+    setLocation('https://test.cplace.cloud/');
+
+    await loadContent();
+    fakeBrowser.runtime.sendMessage.mockClear();
+
+    vi.useFakeTimers();
+    document.body.innerHTML = '<div id="cplace"></div>';
+    await Promise.resolve();
+    await Promise.resolve();
+    vi.advanceTimersByTime(250);
+    vi.useRealTimers();
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+
+    expect(fakeBrowser.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:domainCss:apply' }),
+    );
+  });
+
+  it('is backwards-compatible: modules without onCplaceFound do not throw', async () => {
+    await fakeBrowser.storage.local.set({ enabledModules: { 'system-info': true } });
+    await loadContent();
+
+    // Flip #cplace state — should not throw despite system-info having no onCplaceFound
+    vi.useFakeTimers();
+    document.body.innerHTML = '<div id="cplace"></div>';
+    await Promise.resolve();
+    vi.advanceTimersByTime(250);
+    vi.useRealTimers();
+
+    expect(document.getElementById('cplace-system-info-link')).not.toBeNull();
   });
 });

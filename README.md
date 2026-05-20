@@ -14,8 +14,8 @@ A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions.
 
 | Module | Default | Description |
 |---|---|---|
-| Admin access highlight | off | Shows a red page border when the logged-in user has cplace admin access |
 | Batch Jobs overlay | off | Shows a live overlay of running batch jobs on every cplace page, polling every 15 s while the tab is visible |
+| Domain CSS injection | off | Inject custom CSS on cplace pages matching a hostname/path glob — environment labels (DEV/TEST badges), admin-access highlighting, per-tenant visuals. Ships with a default admin-border rule. |
 | Language Switcher | off | Switch the cplace display language from the extension popup |
 | Navigation Links | on | Adds a popup submenu with quick links to common cplace pages (Workspaces, Packages, Batch Jobs, Low-Code Dashboard, Deleted Items, Activity Stream, My Drafts) |
 | Show system version as badge | on | Displays the detected cplace version number as a badge on the toolbar icon |
