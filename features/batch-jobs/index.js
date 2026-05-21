@@ -1,7 +1,10 @@
-import { batchJobsCacheItem } from '../storage.js';
+import { batchJobsCacheItem, moduleOptionsItem } from '../storage.js';
 
 const PANEL_ID = 'cplace-batch-jobs-panel';
 const CACHE_PRUNE_MS = 60 * 60 * 1000;
+const DEFAULT_POS = { right: 16, bottom: 16 };
+const DRAG_THRESHOLD = 4;
+const MIN_VISIBLE = 32;
 
 let intervalId        = null;
 let tickId            = null;
@@ -10,7 +13,110 @@ let jobLimit          = 10;
 let pollMs            = 60_000;
 let applied           = false;
 let visibilityHandler = null;
+let resizeHandler     = null;
 let currentContext    = null;
+let panelPosition     = { ...DEFAULT_POS };
+let lastJobs          = [];
+let lastBaseUrl       = null;
+
+export function clampPosition(pos, panelEl) {
+  const rect = panelEl?.getBoundingClientRect?.() || { width: 0, height: 0 };
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 0;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
+  const width  = rect.width  || 0;
+  const height = rect.height || 0;
+  const maxRight  = Math.max(MIN_VISIBLE - width,  vw - MIN_VISIBLE);
+  const minRight  = Math.min(MIN_VISIBLE - width,  vw - MIN_VISIBLE);
+  const maxBottom = Math.max(MIN_VISIBLE - height, vh - MIN_VISIBLE);
+  const minBottom = Math.min(MIN_VISIBLE - height, vh - MIN_VISIBLE);
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  return {
+    right:  clamp(pos.right,  minRight,  maxRight),
+    bottom: clamp(pos.bottom, minBottom, maxBottom),
+  };
+}
+
+function applyPosition(panelEl) {
+  if (!panelEl) return;
+  panelEl.style.setProperty('--cplace-bj-right',  `${panelPosition.right}px`);
+  panelEl.style.setProperty('--cplace-bj-bottom', `${panelPosition.bottom}px`);
+}
+
+function isCustomPosition() {
+  return panelPosition.right !== DEFAULT_POS.right || panelPosition.bottom !== DEFAULT_POS.bottom;
+}
+
+async function persistPosition() {
+  try {
+    const all = (await moduleOptionsItem.getValue()) || {};
+    const prev = all['batch-jobs'] || {};
+    const next = { ...all, 'batch-jobs': { ...prev, panelPosition: { ...panelPosition } } };
+    await moduleOptionsItem.setValue(next);
+  } catch (_) { /* ignore */ }
+}
+
+function attachDragHandlers(handleEl, panelEl) {
+  let startX = 0;
+  let startY = 0;
+  let startRight = 0;
+  let startBottom = 0;
+  let moved = false;
+  let activePointerId = null;
+
+  const onMove = (e) => {
+    if (e.pointerId !== activePointerId) return;
+    const dx = startX - e.clientX;
+    const dy = startY - e.clientY;
+    if (!moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    moved = true;
+    panelEl.classList.add('cplace-bj-dragging');
+    panelPosition = clampPosition({ right: startRight + dx, bottom: startBottom + dy }, panelEl);
+    applyPosition(panelEl);
+  };
+
+  const onUp = (e) => {
+    if (e.pointerId !== activePointerId) return;
+    handleEl.removeEventListener('pointermove', onMove);
+    handleEl.removeEventListener('pointerup', onUp);
+    handleEl.removeEventListener('pointercancel', onUp);
+    try { handleEl.releasePointerCapture?.(activePointerId); } catch (_) { /* ignore */ }
+    activePointerId = null;
+    panelEl.classList.remove('cplace-bj-dragging');
+    if (moved) {
+      handleEl._cplaceBjSuppressClick = true;
+      persistPosition().finally(() => {
+        renderPanel(lastJobs, lastBaseUrl);
+      });
+    }
+  };
+
+  handleEl.addEventListener('pointerdown', (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    if (e.target && e.target.closest && e.target.closest('button, a') &&
+        !e.target.closest('.cplace-bj-badge')) {
+      return;
+    }
+    activePointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+    startRight = panelPosition.right;
+    startBottom = panelPosition.bottom;
+    moved = false;
+    handleEl._cplaceBjSuppressClick = false;
+    try { handleEl.setPointerCapture?.(e.pointerId); } catch (_) { /* ignore */ }
+    handleEl.addEventListener('pointermove', onMove);
+    handleEl.addEventListener('pointerup', onUp);
+    handleEl.addEventListener('pointercancel', onUp);
+  });
+}
+
+function wasDragged(handleEl) {
+  if (handleEl._cplaceBjSuppressClick) {
+    handleEl._cplaceBjSuppressClick = false;
+    return true;
+  }
+  return false;
+}
 
 function ttlMs() {
   return Math.max(pollMs - 5_000, Math.floor(pollMs * 0.9));
@@ -137,6 +243,9 @@ function parseRows(rows) {
 }
 
 function renderPanel(jobs, baseUrl = null) {
+  lastJobs = jobs;
+  lastBaseUrl = baseUrl;
+
   if (jobs.length === 0) {
     document.getElementById(PANEL_ID)?.remove();
     return;
@@ -150,16 +259,19 @@ function renderPanel(jobs, baseUrl = null) {
   }
 
   panel.innerHTML = '';
+  applyPosition(panel);
 
   if (!expanded) {
     const badge = document.createElement('button');
     badge.className = 'cplace-bj-badge';
     badge.textContent = `Latest ${jobLimit} Batch jobs ▾`;
     badge.addEventListener('click', () => {
+      if (wasDragged(badge)) return;
       expanded = true;
       renderPanel(jobs, baseUrl);
     });
     panel.appendChild(badge);
+    attachDragHandlers(badge, panel);
   } else {
     const container = document.createElement('div');
     container.className = 'cplace-bj-expanded-panel';
@@ -176,15 +288,39 @@ function renderPanel(jobs, baseUrl = null) {
       title = document.createElement('span');
     }
     title.textContent = `Latest ${jobLimit} Batch jobs`;
+
+    const actions = document.createElement('div');
+    actions.className = 'cplace-bj-header-actions';
+
+    if (isCustomPosition()) {
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'cplace-bj-reset';
+      resetBtn.textContent = '↺';
+      resetBtn.title = 'Reset position';
+      resetBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+      resetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panelPosition = { ...DEFAULT_POS };
+        persistPosition().finally(() => {
+          renderPanel(jobs, baseUrl);
+        });
+      });
+      actions.appendChild(resetBtn);
+    }
+
     const closeBtn = document.createElement('button');
     closeBtn.className = 'cplace-bj-close';
     closeBtn.textContent = '✕';
-    closeBtn.addEventListener('click', () => {
+    closeBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       expanded = false;
       renderPanel(jobs, baseUrl);
     });
+    actions.appendChild(closeBtn);
+
     header.appendChild(title);
-    header.appendChild(closeBtn);
+    header.appendChild(actions);
 
     const list = document.createElement('ul');
     list.className = 'cplace-bj-list';
@@ -244,6 +380,7 @@ function renderPanel(jobs, baseUrl = null) {
     container.appendChild(header);
     container.appendChild(list);
     panel.appendChild(container);
+    attachDragHandlers(header, panel);
   }
 }
 
@@ -299,6 +436,14 @@ export default {
     jobLimit = typeof options.limitJobs    === 'number' ? options.limitJobs   : 10;
     pollMs   = typeof options.pollInterval === 'number' && options.pollInterval > 0
                ? options.pollInterval * 1000 : 60_000;
+    const p = options.panelPosition;
+    if (p && Number.isFinite(p.right) && Number.isFinite(p.bottom)) {
+      panelPosition = { right: p.right, bottom: p.bottom };
+    } else {
+      panelPosition = { ...DEFAULT_POS };
+    }
+    const panelEl = document.getElementById(PANEL_ID);
+    if (panelEl) applyPosition(panelEl);
     currentContext = context;
     if (applied) return;
     applied = true;
@@ -308,6 +453,17 @@ export default {
       else stopPolling();
     };
     document.addEventListener('visibilitychange', visibilityHandler);
+    resizeHandler = () => {
+      const el = document.getElementById(PANEL_ID);
+      if (!el) return;
+      const next = clampPosition(panelPosition, el);
+      if (next.right !== panelPosition.right || next.bottom !== panelPosition.bottom) {
+        panelPosition = next;
+        applyPosition(el);
+        persistPosition();
+      }
+    };
+    window.addEventListener('resize', resizeHandler);
     if (document.visibilityState === 'visible') startPolling();
     tickId = setInterval(updateElapsedCounters, 1_000);
   },
@@ -321,9 +477,16 @@ export default {
       document.removeEventListener('visibilitychange', visibilityHandler);
       visibilityHandler = null;
     }
+    if (resizeHandler) {
+      window.removeEventListener('resize', resizeHandler);
+      resizeHandler = null;
+    }
     document.getElementById(PANEL_ID)?.remove();
     expanded = false;
     currentContext = null;
+    panelPosition = { ...DEFAULT_POS };
+    lastJobs = [];
+    lastBaseUrl = null;
   },
   onVersionDetected(context) {
     currentContext = context;
