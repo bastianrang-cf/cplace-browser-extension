@@ -1,10 +1,20 @@
 #cplace-batch-jobs-panel {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
+  bottom: var(--cplace-bj-bottom, 16px);
+  right: var(--cplace-bj-right, 16px);
   z-index: 2147483647;
   font-family: system-ui, sans-serif;
   font-size: 13px;
+}
+#cplace-batch-jobs-panel .cplace-bj-badge,
+#cplace-batch-jobs-panel .cplace-bj-header {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+#cplace-batch-jobs-panel.cplace-bj-dragging .cplace-bj-badge,
+#cplace-batch-jobs-panel.cplace-bj-dragging .cplace-bj-header {
+  cursor: grabbing;
 }
 #cplace-batch-jobs-panel .cplace-bj-badge {
   display: inline-flex;
@@ -15,7 +25,6 @@
   color: #fff;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
@@ -46,7 +55,8 @@
 #cplace-batch-jobs-panel .cplace-bj-header a:hover {
   text-decoration: underline;
 }
-#cplace-batch-jobs-panel .cplace-bj-close {
+#cplace-batch-jobs-panel .cplace-bj-close,
+#cplace-batch-jobs-panel .cplace-bj-reset {
   background: none;
   border: none;
   color: #fff;
@@ -54,6 +64,13 @@
   font-size: 16px;
   line-height: 1;
   padding: 0;
+}
+#cplace-batch-jobs-panel .cplace-bj-reset {
+  margin-right: 8px;
+}
+#cplace-batch-jobs-panel .cplace-bj-header-actions {
+  display: inline-flex;
+  align-items: center;
 }
 #cplace-batch-jobs-panel .cplace-bj-list {
   list-style: none;

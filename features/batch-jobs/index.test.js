@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
-import { batchJobsCacheItem } from '../storage.js';
+import { batchJobsCacheItem, moduleOptionsItem } from '../storage.js';
 
 beforeEach(() => {
   fakeBrowser.reset();
@@ -476,6 +476,52 @@ describe('batch-jobs module', () => {
       mod.revert();
     });
 
+    it('uses default position when no panelPosition is stored', async () => {
+      const mod = await loadMod();
+      mod.apply();
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: {
+          rows: [{
+            id: 'persistentJob_j',
+            html: rowHtml({
+              name: 'J', href: '/training/batchJob/view?id=j',
+              startedAt: Date.now() - 1000, state: 'running', duration: 0,
+            }),
+          }],
+          total: 1,
+        },
+      }));
+
+      const panel = document.getElementById('cplace-batch-jobs-panel');
+      expect(panel.style.getPropertyValue('--cplace-bj-right')).toBe('16px');
+      expect(panel.style.getPropertyValue('--cplace-bj-bottom')).toBe('16px');
+      mod.revert();
+    });
+
+    it('restores a saved panelPosition on apply()', async () => {
+      const mod = await loadMod();
+      mod.apply({ panelPosition: { right: 200, bottom: 300 } });
+
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: {
+          rows: [{
+            id: 'persistentJob_j',
+            html: rowHtml({
+              name: 'J', href: '/training/batchJob/view?id=j',
+              startedAt: Date.now() - 1000, state: 'running', duration: 0,
+            }),
+          }],
+          total: 1,
+        },
+      }));
+
+      const panel = document.getElementById('cplace-batch-jobs-panel');
+      expect(panel.style.getPropertyValue('--cplace-bj-right')).toBe('200px');
+      expect(panel.style.getPropertyValue('--cplace-bj-bottom')).toBe('300px');
+      mod.revert();
+    });
+
     it('respects a custom limitJobs option', async () => {
       const mod = await loadMod();
       mod.apply({ limitJobs: 5 });
@@ -502,6 +548,160 @@ describe('batch-jobs module', () => {
       const items = document.querySelectorAll('.cplace-bj-list li');
       expect(items.length).toBe(5);
 
+      mod.revert();
+    });
+  });
+
+  describe('panel position (drag + persistence)', () => {
+    function singleJobRows() {
+      return [{
+        id: 'persistentJob_j',
+        html: rowHtml({
+          name: 'J', href: '/training/batchJob/view?id=j',
+          startedAt: Date.now() - 1000, state: 'running', duration: 0,
+        }),
+      }];
+    }
+
+    function dispatchResult() {
+      document.dispatchEvent(new CustomEvent('cplace:batchJobsResult', {
+        detail: { rows: singleJobRows(), total: 1 },
+      }));
+    }
+
+    function pointer(type, target, { clientX = 0, clientY = 0, pointerId = 1 } = {}) {
+      const ev = new Event(type, { bubbles: true, cancelable: true });
+      ev.clientX = clientX;
+      ev.clientY = clientY;
+      ev.pointerId = pointerId;
+      ev.button = 0;
+      target.dispatchEvent(ev);
+    }
+
+    it('clampPosition keeps the panel at least 32px on screen', async () => {
+      const { clampPosition } = await import('./index.js');
+      const fakePanel = { getBoundingClientRect: () => ({ width: 100, height: 50 }) };
+      const origW = window.innerWidth;
+      const origH = window.innerHeight;
+      Object.defineProperty(window, 'innerWidth',  { configurable: true, value: 800 });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
+      try {
+        // Too far right (would push panel off-screen-left): clamped down
+        expect(clampPosition({ right: 99999, bottom: 16 }, fakePanel).right)
+          .toBe(800 - 32);
+        // Negative right (panel pushed off-screen-right): clamped up so 32px remains
+        expect(clampPosition({ right: -9999, bottom: 16 }, fakePanel).right)
+          .toBe(32 - 100);
+        expect(clampPosition({ right: 16, bottom: 99999 }, fakePanel).bottom)
+          .toBe(600 - 32);
+      } finally {
+        Object.defineProperty(window, 'innerWidth',  { configurable: true, value: origW });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: origH });
+      }
+    });
+
+    it('click on badge (no drag) still toggles expand', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      dispatchResult();
+      const badge = document.querySelector('.cplace-bj-badge');
+      pointer('pointerdown', badge, { clientX: 100, clientY: 100 });
+      pointer('pointerup',   badge, { clientX: 100, clientY: 100 });
+      badge.click();
+      expect(document.querySelector('.cplace-bj-expanded-panel')).not.toBeNull();
+      mod.revert();
+    });
+
+    it('drag past threshold updates position, persists, and adds reset button', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      dispatchResult();
+      const badge = document.querySelector('.cplace-bj-badge');
+
+      pointer('pointerdown', badge, { clientX: 500, clientY: 500 });
+      pointer('pointermove', badge, { clientX: 400, clientY: 450 });
+      pointer('pointerup',   badge, { clientX: 400, clientY: 450 });
+
+      await new Promise((r) => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
+
+      const stored = await moduleOptionsItem.getValue();
+      expect(stored['batch-jobs']).toBeDefined();
+      expect(stored['batch-jobs'].panelPosition).toBeDefined();
+      // Pointer moved 100px left and 50px up → right grows by 100, bottom by 50
+      expect(stored['batch-jobs'].panelPosition.right).toBe(16 + 100);
+      expect(stored['batch-jobs'].panelPosition.bottom).toBe(16 + 50);
+
+      const panel = document.getElementById('cplace-batch-jobs-panel');
+      expect(panel.style.getPropertyValue('--cplace-bj-right')).toBe('116px');
+      expect(panel.style.getPropertyValue('--cplace-bj-bottom')).toBe('66px');
+
+      // Now expand and verify the reset button is shown
+      document.querySelector('.cplace-bj-badge').click();
+      expect(document.querySelector('.cplace-bj-reset')).not.toBeNull();
+
+      mod.revert();
+    });
+
+    it('reset button restores default position, persists, and hides itself', async () => {
+      await moduleOptionsItem.setValue({
+        'batch-jobs': { panelPosition: { right: 250, bottom: 250 } },
+      });
+      const mod = await loadMod();
+      mod.apply({ panelPosition: { right: 250, bottom: 250 } });
+      dispatchResult();
+
+      document.querySelector('.cplace-bj-badge').click();
+      const resetBtn = document.querySelector('.cplace-bj-reset');
+      expect(resetBtn).not.toBeNull();
+
+      resetBtn.click();
+      await new Promise((r) => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
+
+      const panel = document.getElementById('cplace-batch-jobs-panel');
+      expect(panel.style.getPropertyValue('--cplace-bj-right')).toBe('16px');
+      expect(panel.style.getPropertyValue('--cplace-bj-bottom')).toBe('16px');
+      expect(document.querySelector('.cplace-bj-reset')).toBeNull();
+
+      const stored = await moduleOptionsItem.getValue();
+      expect(stored['batch-jobs'].panelPosition).toEqual({ right: 16, bottom: 16 });
+
+      mod.revert();
+    });
+
+    it('window resize re-clamps an off-screen position and persists the new value', async () => {
+      const mod = await loadMod();
+      mod.apply({ panelPosition: { right: 700, bottom: 16 } });
+      dispatchResult();
+
+      const panel = document.getElementById('cplace-batch-jobs-panel');
+      // Force a small viewport
+      const origW = window.innerWidth;
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 400 });
+      try {
+        window.dispatchEvent(new Event('resize'));
+        await new Promise((r) => setTimeout(r, 0));
+        const right = parseFloat(panel.style.getPropertyValue('--cplace-bj-right'));
+        expect(right).toBeLessThanOrEqual(400 - 32);
+        const stored = await moduleOptionsItem.getValue();
+        expect(stored['batch-jobs'].panelPosition.right).toBeLessThanOrEqual(400 - 32);
+      } finally {
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: origW });
+        mod.revert();
+      }
+    });
+
+    it('does not persist on a non-drag click', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      dispatchResult();
+      const badge = document.querySelector('.cplace-bj-badge');
+      pointer('pointerdown', badge, { clientX: 50, clientY: 50 });
+      pointer('pointerup',   badge, { clientX: 50, clientY: 50 });
+      await new Promise((r) => setTimeout(r, 0));
+      const stored = await moduleOptionsItem.getValue();
+      expect(stored['batch-jobs']).toBeUndefined();
       mod.revert();
     });
   });
