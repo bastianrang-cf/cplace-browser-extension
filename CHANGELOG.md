@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.16.0...v0.16.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* **batch-jobs:** make overlay draggable and persist position ([#99](https://github.com/bastianrang-cf/cplace-browser-extension/issues/99)) ([7911925](https://github.com/bastianrang-cf/cplace-browser-extension/commit/7911925afa9d1ea800b62ddfe6c9fe1b643a9a03))
+
 ## [0.16.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.15.0...v0.16.0) (2026-05-20)
 
 
