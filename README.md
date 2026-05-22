@@ -17,6 +17,7 @@ A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions.
 | Batch Jobs overlay | off | Shows a live overlay of running batch jobs on every cplace page, polling every 15 s while the tab is visible |
 | Domain CSS injection | off | Inject custom CSS on cplace pages matching a hostname/path glob — environment labels (DEV/TEST badges), admin-access highlighting, per-tenant visuals. Ships with a default admin-border rule. |
 | Language Switcher | off | Switch the cplace display language from the extension popup |
+| Low-Code Logs toasts | off | Toast notifications for new low-code log entries on cplace pages, with per-field include/exclude filters |
 | Navigation Links | on | Adds a popup submenu with quick links to common cplace pages (Workspaces, Packages, Batch Jobs, Low-Code Dashboard, Low-Code Logs, API Tokens, AI Settings, Deleted Items, Activity Stream, My Drafts). Each link can be individually toggled in the module options. |
 | Show system version as badge | on | Displays the detected cplace version number as a badge on the toolbar icon |
 | System Information | off | Adds a "System Info" popup button that fetches the tenant's system info and shows it in a dialog |
