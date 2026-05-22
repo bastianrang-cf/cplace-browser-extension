@@ -1,6 +1,6 @@
 {
   "name": "cplace-browser-extension",
-  "version": "0.16.1",
+  "version": "0.17.0",
   "private": true,
   "description": "Chrome/Edge extension that detects cplace pages and exposes optional modules.",
   "license": "MIT",
