@@ -330,7 +330,7 @@ function showToast(entry, baseUrl) {
     return;
   }
   const stack = ensureStack();
-  const toastEl = buildToast(entry, baseUrl);
+  const toastEl = buildToast(entry);
   stack.appendChild(toastEl);
   const timer = startDismissTimer(entry, toastEl);
   activeToasts.push({ id: entry.id, el: toastEl, timer, level: entry.level, entry });
@@ -390,11 +390,11 @@ function renderOverflowPill(baseUrl) {
   pill.type = 'button';
   pill.className = 'cplace-lcl-overflow';
   pill.textContent = `+${overflowQueue.length} more`;
-  pill.addEventListener('click', () => openOverflowPanel(baseUrl));
+  pill.addEventListener('click', () => openOverflowPanel());
   stack.appendChild(pill);
 }
 
-function openOverflowPanel(baseUrl) {
+function openOverflowPanel() {
   const stack = document.getElementById(STACK_ID);
   if (!stack) return;
   let panel = stack.querySelector('.cplace-lcl-overflow-panel');
@@ -402,12 +402,12 @@ function openOverflowPanel(baseUrl) {
   panel = document.createElement('div');
   panel.className = 'cplace-lcl-overflow-panel';
   for (const entry of overflowQueue) {
-    panel.appendChild(buildToast(entry, baseUrl, /*compact*/ true));
+    panel.appendChild(buildToast(entry, /*compact*/ true));
   }
   stack.appendChild(panel);
 }
 
-function buildToast(entry, baseUrl, compact = false) {
+function buildToast(entry, compact = false) {
   const toast = document.createElement('div');
   toast.className = `cplace-lcl-toast cplace-lcl-toast--${entry.type}`;
   toast.dataset.id = entry.id;
@@ -469,18 +469,6 @@ function buildToast(entry, baseUrl, compact = false) {
     details.appendChild(summary);
     details.appendChild(pre);
     toast.appendChild(details);
-  }
-
-  if (baseUrl) {
-    const footer = document.createElement('div');
-    footer.className = 'cplace-lcl-footer';
-    const a = document.createElement('a');
-    a.href = `${baseUrl}/cplacejsAdmin/cplaceJSLogs`;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    a.textContent = 'Open full log →';
-    footer.appendChild(a);
-    toast.appendChild(footer);
   }
 
   return toast;
