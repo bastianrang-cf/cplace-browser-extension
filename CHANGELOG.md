@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.16.1...v0.17.0) (2026-05-22)
+
+
+### Features
+
+* **low-code-logs:** toast notifications for new low-code log entries ([#101](https://github.com/bastianrang-cf/cplace-browser-extension/issues/101)) ([4acaaf7](https://github.com/bastianrang-cf/cplace-browser-extension/commit/4acaaf7e5bf80432556ba8592e9ed2186794a2a9))
+
 ## [0.16.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.16.0...v0.16.1) (2026-05-21)
 
 
