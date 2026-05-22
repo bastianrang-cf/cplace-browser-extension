@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.18.0...v0.18.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* Increase max-width and width in module.css ([9ce4af4](https://github.com/bastianrang-cf/cplace-browser-extension/commit/9ce4af4d878fd404c13691eef1078ee12ec0be93))
+
 ## [0.18.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.17.0...v0.18.0) (2026-05-22)
 
 
