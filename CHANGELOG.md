@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.18.1...v0.18.2) (2026-05-22)
+
+
+### Bug Fixes
+
+* **low-code-logs:** roomier message, full-value flyout with deep links ([#107](https://github.com/bastianrang-cf/cplace-browser-extension/issues/107)) ([cf75164](https://github.com/bastianrang-cf/cplace-browser-extension/commit/cf751646b9ec89b479b0b0c9f5d9ce7c166aea19))
+
 ## [0.18.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.18.0...v0.18.1) (2026-05-22)
 
 
