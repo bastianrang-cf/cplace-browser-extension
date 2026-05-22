@@ -116,24 +116,6 @@
   font-family: ui-monospace, monospace;
   font-size: 11px;
 }
-#cplace-low-code-logs-stack .cplace-lcl-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 6px 10px;
-  background: #f9fafb;
-  border-top: 1px solid #f3f4f6;
-  border-bottom-left-radius: 2px;
-  border-bottom-right-radius: 6px;
-}
-#cplace-low-code-logs-stack .cplace-lcl-footer a {
-  color: #1a56db;
-  text-decoration: none;
-  font-size: 12px;
-}
-#cplace-low-code-logs-stack .cplace-lcl-footer a:hover {
-  text-decoration: underline;
-}
-
 #cplace-low-code-logs-stack .cplace-lcl-filter-popover {
   position: absolute;
   right: 0;

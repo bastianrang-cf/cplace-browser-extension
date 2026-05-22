@@ -275,16 +275,6 @@ describe('toast rendering', () => {
     await lowCodeLogsSeenItem.setValue({ [BASE_URL]: { ids: ['seed'], updatedAt: Date.now() } });
   });
 
-  it('renders the full-log link on every toast', async () => {
-    const mod = await loadMod();
-    mod.apply({}, { baseUrl: BASE_URL });
-    await dispatchResult({ logs: [logEntry({ user: 'u1' })], total: 1 });
-    const link = document.querySelector('.cplace-lcl-footer a');
-    expect(link?.getAttribute('href')).toBe(`${BASE_URL}/cplacejsAdmin/cplaceJSLogs`);
-    expect(link?.getAttribute('target')).toBe('_blank');
-    mod.revert();
-  });
-
   it('error toast is sticky when stickyOnError is true', async () => {
     vi.useFakeTimers();
     const mod = await loadMod();
