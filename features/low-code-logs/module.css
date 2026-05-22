@@ -8,7 +8,7 @@
   gap: 8px;
   font-family: system-ui, sans-serif;
   font-size: 13px;
-  max-width: 360px;
+  max-width: 480px;
   pointer-events: none;
 }
 #cplace-low-code-logs-stack > * {
@@ -24,7 +24,7 @@
   border-left-width: 4px;
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
-  width: 360px;
+  width: 480px;
   position: relative;
   animation: cplace-lcl-slide-in 180ms ease-out;
 }
@@ -126,7 +126,7 @@
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   padding: 6px;
-  min-width: 280px;
+  min-width: 320px;
   z-index: 1;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-row {
