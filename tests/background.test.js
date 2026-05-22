@@ -68,6 +68,7 @@ describe('background — onInstalled', () => {
   it('does not call storage.set when all keys already exist', async () => {
     const enabledKeys = {
       'domain-css': false, 'batch-jobs': false, 'language-switcher': false,
+      'low-code-logs': false,
       'nav-links': true, 'system-info': false, 'version-badge': true,
     };
     await fakeBrowser.storage.local.set({
@@ -75,6 +76,10 @@ describe('background — onInstalled', () => {
       moduleOptions: {
         'batch-jobs': { limitJobs: 10, pollInterval: 60 },
         'domain-css': { rules: [{ pattern: '*', css: 'body {}' }] },
+        'low-code-logs': {
+          pollIntervalSec: 15, maxToasts: 3, autoDismissMs: 8000,
+          minLevel: 'info', stickyOnError: true,
+        },
         'nav-links': { disabledPaths: [] },
       },
     });

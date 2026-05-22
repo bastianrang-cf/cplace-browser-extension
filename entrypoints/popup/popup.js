@@ -54,7 +54,17 @@ async function init() {
     if (!enabledMap[mod.id]) continue;
     if (mod.actions?.length) {
       for (const action of mod.actions) {
-        actionItems.push({ moduleId: mod.id, action });
+        const visible = typeof action.isVisible === 'function'
+          ? await action.isVisible({ baseUrl }).catch(() => true)
+          : true;
+        if (!visible) continue;
+        const dynamicLabel = typeof action.getLabel === 'function'
+          ? await action.getLabel({ baseUrl }).catch(() => null)
+          : null;
+        actionItems.push({
+          moduleId: mod.id,
+          action: dynamicLabel ? { ...action, label: dynamicLabel } : action,
+        });
       }
     }
     if (mod.navLinks?.length) {
