@@ -24,8 +24,8 @@
   border-left-width: 4px;
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
-  overflow: hidden;
   width: 360px;
+  position: relative;
   animation: cplace-lcl-slide-in 180ms ease-out;
 }
 @keyframes cplace-lcl-slide-in {
@@ -44,6 +44,8 @@
   padding: 6px 10px;
   background: #f9fafb;
   border-bottom: 1px solid #f3f4f6;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 6px;
   touch-action: none;
   cursor: grab;
   user-select: none;
@@ -120,6 +122,8 @@
   padding: 6px 10px;
   background: #f9fafb;
   border-top: 1px solid #f3f4f6;
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 6px;
 }
 #cplace-low-code-logs-stack .cplace-lcl-footer a {
   color: #1a56db;
