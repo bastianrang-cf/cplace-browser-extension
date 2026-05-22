@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.17.0...v0.18.0) (2026-05-22)
+
+
+### Features
+
+* **low-code-logs:** drop the "Open full log" footer link from toasts ([#104](https://github.com/bastianrang-cf/cplace-browser-extension/issues/104)) ([01a7187](https://github.com/bastianrang-cf/cplace-browser-extension/commit/01a718776f733e863ed94081362349eb277d6a0b))
+
+
+### Bug Fixes
+
+* **low-code-logs:** show the kebab filter popover instead of clipping it ([#103](https://github.com/bastianrang-cf/cplace-browser-extension/issues/103)) ([9b853fa](https://github.com/bastianrang-cf/cplace-browser-extension/commit/9b853fa38ecc2823d88c1965be2cefa6323a0537))
+
 ## [0.17.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.16.1...v0.17.0) (2026-05-22)
 
 
