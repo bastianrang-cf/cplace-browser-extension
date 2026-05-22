@@ -85,7 +85,7 @@
   color: #111827;
 }
 #cplace-low-code-logs-stack .cplace-lcl-message {
-  padding: 8px 10px;
+  padding: 8px 10px 12px;
   color: #111827;
   word-break: break-word;
 }
@@ -127,6 +127,7 @@
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   padding: 6px;
   min-width: 320px;
+  max-width: min(720px, calc(100vw - 32px));
   z-index: 1;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-row {
@@ -152,15 +153,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+#cplace-low-code-logs-stack a.cplace-lcl-filter-value {
+  color: #1a56db;
+  text-decoration: none;
+}
+#cplace-low-code-logs-stack a.cplace-lcl-filter-value:hover {
+  text-decoration: underline;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-action {
   background: #f3f4f6;
   border: 1px solid #d1d5db;
   border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
+  padding: 2px 4px;
+  font-size: 14px;
+  line-height: 1;
   cursor: pointer;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-action:hover {
   background: #e5e7eb;

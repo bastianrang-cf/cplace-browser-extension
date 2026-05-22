@@ -474,10 +474,30 @@ function buildToast(entry, compact = false) {
   return toast;
 }
 
-function abbreviate(value) {
-  if (typeof value !== 'string') return String(value);
-  if (value.length <= 14) return value;
-  return `${value.slice(0, 6)}…${value.slice(-4)}`;
+export function buildValueElement(field, value, baseUrl) {
+  const str = String(value);
+  let href = null;
+  if (field === 'spaceId' && baseUrl) {
+    href = `${baseUrl}/space/details?id=${encodeURIComponent(str)}`;
+  } else if (field === 'user' && baseUrl) {
+    href = `${baseUrl}/persons/${encodeURIComponent(str)}`;
+  } else if (field === 'requestUrl' && /^https?:\/\//.test(str)) {
+    href = str;
+  }
+  let el;
+  if (href) {
+    el = document.createElement('a');
+    el.href = href;
+    el.target = '_blank';
+    el.rel = 'noopener noreferrer';
+    el.addEventListener('click', (e) => e.stopPropagation());
+  } else {
+    el = document.createElement('span');
+  }
+  el.className = 'cplace-lcl-filter-value';
+  el.textContent = str;
+  el.title = str;
+  return el;
 }
 
 function toggleFilterPopover(toastEl, entry) {
@@ -485,6 +505,7 @@ function toggleFilterPopover(toastEl, entry) {
   if (existing) { existing.remove(); return; }
   const popover = document.createElement('div');
   popover.className = 'cplace-lcl-filter-popover';
+  const baseUrl = currentContext?.baseUrl ?? null;
 
   const info = entry.additionalInfo || {};
   let hasFields = false;
@@ -500,16 +521,14 @@ function toggleFilterPopover(toastEl, entry) {
     f.textContent = `${field}:`;
     row.appendChild(f);
 
-    const v = document.createElement('span');
-    v.className = 'cplace-lcl-filter-value';
-    v.textContent = abbreviate(String(value));
-    v.title = String(value);
-    row.appendChild(v);
+    row.appendChild(buildValueElement(field, value, baseUrl));
 
     const onlyBtn = document.createElement('button');
     onlyBtn.type = 'button';
     onlyBtn.className = 'cplace-lcl-filter-action';
-    onlyBtn.textContent = 'Only';
+    onlyBtn.textContent = '🎯';
+    onlyBtn.title = 'Show only entries with this value';
+    onlyBtn.setAttribute('aria-label', 'Show only entries with this value');
     onlyBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       await addFilterValue(field, value, 'include');
@@ -520,7 +539,9 @@ function toggleFilterPopover(toastEl, entry) {
     const hideBtn = document.createElement('button');
     hideBtn.type = 'button';
     hideBtn.className = 'cplace-lcl-filter-action';
-    hideBtn.textContent = 'Hide';
+    hideBtn.textContent = '🚫';
+    hideBtn.title = 'Hide entries with this value';
+    hideBtn.setAttribute('aria-label', 'Hide entries with this value');
     hideBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       await addFilterValue(field, value, 'exclude');

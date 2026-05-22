@@ -439,6 +439,53 @@ describe('position persistence', () => {
   });
 });
 
+describe('buildValueElement', () => {
+  it('spaceId becomes a link to /space/details?id=<value>', async () => {
+    const { buildValueElement } = await import('./index.js');
+    const el = buildValueElement('spaceId', 'cstqpqun6j', BASE_URL);
+    expect(el.tagName).toBe('A');
+    expect(el.getAttribute('href')).toBe(`${BASE_URL}/space/details?id=cstqpqun6j`);
+    expect(el.getAttribute('target')).toBe('_blank');
+    expect(el.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(el.textContent).toBe('cstqpqun6j');
+  });
+
+  it('user becomes a link to /persons/<value>', async () => {
+    const { buildValueElement } = await import('./index.js');
+    const el = buildValueElement('user', 'wdu0pgexdz', BASE_URL);
+    expect(el.tagName).toBe('A');
+    expect(el.getAttribute('href')).toBe(`${BASE_URL}/persons/wdu0pgexdz`);
+  });
+
+  it('absolute requestUrl becomes a direct link', async () => {
+    const { buildValueElement } = await import('./index.js');
+    const el = buildValueElement('requestUrl', 'https://example.com/test', BASE_URL);
+    expect(el.tagName).toBe('A');
+    expect(el.getAttribute('href')).toBe('https://example.com/test');
+  });
+
+  it('internal requestUrl sentinel stays as a span', async () => {
+    const { buildValueElement } = await import('./index.js');
+    const el = buildValueElement('requestUrl', '<internal>', BASE_URL);
+    expect(el.tagName).toBe('SPAN');
+    expect(el.textContent).toBe('<internal>');
+  });
+
+  it('non-linkable fields render full value in a span', async () => {
+    const { buildValueElement } = await import('./index.js');
+    const longValue = 'cf.cplace.platform.SomeReallyLongJobClassName';
+    const el = buildValueElement('scriptType', longValue, BASE_URL);
+    expect(el.tagName).toBe('SPAN');
+    expect(el.textContent).toBe(longValue);
+  });
+
+  it('does not link spaceId / user when baseUrl is missing', async () => {
+    const { buildValueElement } = await import('./index.js');
+    const el = buildValueElement('spaceId', 'cstqpqun6j', null);
+    expect(el.tagName).toBe('SPAN');
+  });
+});
+
 describe('clampPosition', () => {
   it('keeps top within the viewport', async () => {
     const { clampPosition } = await import('./index.js');
