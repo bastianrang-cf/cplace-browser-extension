@@ -426,6 +426,7 @@ export default {
   name: 'Batch Jobs overlay',
   description: 'Shows a live overlay of running batch jobs on every cplace page. Polls while the tab is visible; shows a red error indicator on connection failure.',
   defaultEnabled: false,
+  snoozable: true,
   css: true,
   pageScript: true,
   options: [

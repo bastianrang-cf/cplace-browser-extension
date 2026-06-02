@@ -128,7 +128,11 @@ export default defineBackground(() => {
       return;
     }
 
-    if (msg.type === 'cplace:moduleToggle' || msg.type === 'cplace:moduleOptions') {
+    if (
+      msg.type === 'cplace:moduleToggle' ||
+      msg.type === 'cplace:moduleOptions' ||
+      msg.type === 'cplace:moduleSnooze'
+    ) {
       browser.tabs.query({}).then((tabs) => {
         for (const tab of tabs) {
           if (tab.id == null) continue;

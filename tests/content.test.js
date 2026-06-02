@@ -356,6 +356,88 @@ describe('content — cplace:moduleOptions listener', () => {
   });
 });
 
+describe('content — module snooze', () => {
+  const baseUrl = location.origin;
+
+  async function detectVersion() {
+    document.dispatchEvent(
+      new CustomEvent('cplace:versionDetected', { detail: { version: '25.4' } }),
+    );
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+  }
+
+  it('does not apply a snoozed snoozable module for the tenant', async () => {
+    setCplacePresent();
+    vi.useFakeTimers();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': true },
+      moduleSnooze: { [baseUrl]: { 'batch-jobs': { until: Date.now() + 60_000 } } },
+    });
+    await loadContent();
+    await detectVersion();
+
+    expect(document.getElementById('cplace-batch-jobs-link')).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('does not apply a soft-deactivated module (until: null)', async () => {
+    setCplacePresent();
+    vi.useFakeTimers();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': true },
+      moduleSnooze: { [baseUrl]: { 'batch-jobs': { until: null } } },
+    });
+    await loadContent();
+    await detectVersion();
+
+    expect(document.getElementById('cplace-batch-jobs-link')).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('applies a module whose snooze has already expired (pruned on load)', async () => {
+    setCplacePresent();
+    vi.useFakeTimers();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': true },
+      moduleSnooze: { [baseUrl]: { 'batch-jobs': { until: Date.now() - 1000 } } },
+    });
+    await loadContent();
+    await detectVersion();
+
+    expect(document.getElementById('cplace-batch-jobs-link')).not.toBeNull();
+    vi.useRealTimers();
+  });
+
+  it('does not suppress non-snoozable modules', async () => {
+    setCplacePresent();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'system-info': true },
+      moduleSnooze: { [baseUrl]: { 'system-info': { until: null } } },
+    });
+    await loadContent();
+    await detectVersion();
+
+    expect(document.getElementById('cplace-system-info-link')).not.toBeNull();
+  });
+
+  it('reverts an active module when a snooze is written to storage (watch backstop)', async () => {
+    setCplacePresent();
+    vi.useFakeTimers();
+    await fakeBrowser.storage.local.set({ enabledModules: { 'batch-jobs': true } });
+    await loadContent();
+    await detectVersion();
+    expect(document.getElementById('cplace-batch-jobs-link')).not.toBeNull();
+
+    await fakeBrowser.storage.local.set({
+      moduleSnooze: { [baseUrl]: { 'batch-jobs': { until: Date.now() + 60_000 } } },
+    });
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+
+    expect(document.getElementById('cplace-batch-jobs-link')).toBeNull();
+    vi.useRealTimers();
+  });
+});
+
 describe('content — storage.onChanged backstop', () => {
   it('applies modules when enabledModules changes in local storage', async () => {
     setCplacePresent();

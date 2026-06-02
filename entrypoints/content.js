@@ -1,8 +1,9 @@
 import { defineContentScript, injectScript } from '#imports';
 import { registry } from '../features/registry.js';
 import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../features/utils.js';
-import { enabledModulesItem, moduleOptionsItem } from '../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, moduleSnoozeItem } from '../features/storage.js';
 import { deriveBaseUrl } from '../features/base-url.js';
+import { pruneSnooze, snoozeState } from '../features/snooze.js';
 
 export default defineContentScript({
   registration: 'runtime',
@@ -13,10 +14,42 @@ export default defineContentScript({
     let lastFound = null;
     let moduleOptions = {};
     let desiredEnabled = {};
+    let moduleSnooze = {};
+    let snoozeTimer = null;
 
     function getEnabledMap(stored) {
       const defaults = registry.defaultEnabledMap();
       return { ...defaults, ...(stored || {}) };
+    }
+
+    function isModuleSuppressed(id) {
+      const key = lastContext?.baseUrl;
+      if (!key) return false;
+      return snoozeState(moduleSnooze[key]?.[id]) !== 'off';
+    }
+
+    function scheduleSnoozeExpiry() {
+      if (snoozeTimer) {
+        clearTimeout(snoozeTimer);
+        snoozeTimer = null;
+      }
+      const key = lastContext?.baseUrl;
+      const mods = key ? moduleSnooze[key] : null;
+      if (!mods) return;
+      const now = Date.now();
+      let earliest = Infinity;
+      for (const entry of Object.values(mods)) {
+        if (entry && entry.until != null && entry.until > now) {
+          earliest = Math.min(earliest, entry.until);
+        }
+      }
+      if (earliest !== Infinity) {
+        snoozeTimer = setTimeout(() => {
+          moduleSnooze = pruneSnooze(moduleSnooze);
+          reconcile();
+          scheduleSnoozeExpiry();
+        }, earliest - now);
+      }
     }
 
     function notifyContextDetected(mod) {
@@ -32,7 +65,8 @@ export default defineContentScript({
       const mod = registry.byId(id);
       if (!mod) return;
       const isActive = activeModules.has(id);
-      const shouldBeActive = enabled && lastFound === true;
+      const shouldBeActive =
+        enabled && lastFound === true && !(mod.snoozable && isModuleSuppressed(id));
       if (shouldBeActive && !isActive) {
         try {
           if (mod.css) injectModuleCSS(mod.id);
@@ -63,7 +97,7 @@ export default defineContentScript({
       }
     }
 
-    function reconcileAfterCplaceChange() {
+    function reconcile() {
       for (const mod of registry.all()) {
         applyModuleState(mod.id, !!desiredEnabled[mod.id]);
       }
@@ -81,6 +115,10 @@ export default defineContentScript({
         context: detail.context ?? null,
       });
       lastContext = { version: detail.version || null, ...baseInfo };
+      // baseUrl is now known — re-evaluate snooze suppression for this tenant and arm
+      // the expiry timer (modules applied before detection may need reverting).
+      reconcile();
+      scheduleSnoozeExpiry();
       for (const mod of registry.all()) {
         if (activeModules.has(mod.id) && typeof mod.onVersionDetected === 'function') {
           try { mod.onVersionDetected(lastContext); } catch (e) {
@@ -99,7 +137,7 @@ export default defineContentScript({
       } catch (_) {
         // service worker may be asleep; safe to ignore — next check will retry
       }
-      reconcileAfterCplaceChange();
+      reconcile();
       if (found && !versionInjected) {
         versionInjected = true;
         injectScript('/detect-version-page.js', { keepInDom: true }).catch(() => {});
@@ -117,12 +155,16 @@ export default defineContentScript({
 
     // --- Module runtime ---
 
-    Promise.all([enabledModulesItem.getValue(), moduleOptionsItem.getValue()]).then(
-      ([enabled, options]) => {
-        moduleOptions = options;
-        applyAll(enabled);
-      },
-    );
+    Promise.all([
+      enabledModulesItem.getValue(),
+      moduleOptionsItem.getValue(),
+      moduleSnoozeItem.getValue(),
+    ]).then(([enabled, options, snooze]) => {
+      moduleOptions = options;
+      moduleSnooze = pruneSnooze(snooze || {});
+      applyAll(enabled);
+      scheduleSnoozeExpiry();
+    });
 
     browser.runtime.onMessage.addListener((msg) => {
       if (!msg) return;
@@ -153,6 +195,15 @@ export default defineContentScript({
         }
         return;
       }
+      if (msg.type === 'cplace:moduleSnooze') {
+        // Primary cross-window path: re-read the shared map and reconcile.
+        moduleSnoozeItem.getValue().then((v) => {
+          moduleSnooze = pruneSnooze(v || {});
+          reconcile();
+          scheduleSnoozeExpiry();
+        });
+        return;
+      }
       if (msg.type === 'cplace:getBaseUrl') {
         return Promise.resolve(lastContext);
       }
@@ -160,6 +211,12 @@ export default defineContentScript({
 
     enabledModulesItem.watch((newValue) => {
       applyAll(newValue);
+    });
+
+    moduleSnoozeItem.watch((newValue) => {
+      moduleSnooze = pruneSnooze(newValue || {});
+      reconcile();
+      scheduleSnoozeExpiry();
     });
   },
 });
