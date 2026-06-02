@@ -736,6 +736,7 @@ export default {
   name: 'Low-Code Logs toasts',
   description: 'Toast notifications for new low-code log entries on cplace pages, with per-field include/exclude filters.',
   defaultEnabled: false,
+  snoozable: true,
   css: true,
   pageScript: true,
   defaultOptions: {

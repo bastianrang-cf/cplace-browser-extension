@@ -156,6 +156,7 @@ const descriptor = {
   description:
     'Inject custom CSS on cplace pages matching a hostname/path glob. Use it for environment labels, admin highlighting, or other per-tenant visual cues.',
   defaultEnabled: false,
+  snoozable: true,
   defaultOptions: { rules: seedRules.map((r) => ({ ...r })) },
   apply(options = {}) {
     const rules = Array.isArray(options.rules) ? options.rules : [];

@@ -26,6 +26,24 @@ Enable or disable modules on the **Options** page (`chrome://extensions` → cpl
 
 ---
 
+## Snoozing modules during a presentation
+
+The popup has a **Snooze** menu for quickly silencing the page-modifying modules
+(**Batch Jobs overlay**, **Low-Code Logs toasts**, **Domain CSS injection**) on the
+tenant you're currently viewing — handy during a live demo or screen share.
+
+Each module is a tri-state toggle that cycles **Active → Snoozed → Off**:
+
+- **Snoozed** — hidden for this tenant; **auto-reactivates after 1 day** (the row shows
+  the time it will return).
+- **Off** (soft deactivate) — stays hidden for this tenant until you turn it back on.
+
+When more than one snoozable module is enabled, a **Snooze all** row sets them together.
+The state is keyed by tenant (origin + path) and **propagates automatically to every
+open tab/window** showing that tenant, so you only have to set it once.
+
+---
+
 ## First-run setup: page access
 
 The extension asks for page access **on demand** rather than at install time. After installing, the options page opens automatically with an **Enable on all pages** button — click it once and confirm Chrome's prompt to let the extension detect cplace on the sites you visit. Until you do, the toolbar icon stays inactive and the modules cannot run. You can revoke access at any time from the same options panel.
@@ -89,6 +107,7 @@ export default {
   name: 'My Module',
   description: 'What it does.',
   defaultEnabled: false,
+  snoozable: true,  // optional — show in the popup Snooze menu (per-tenant snooze / soft-deactivate)
   css: true,        // optional — auto-injects features/<id>/module.css
   pageScript: true, // optional — auto-injects features/<id>/page.js
   apply()  { /* optional — activate beyond asset injection; must be idempotent. Only called on cplace pages. */ },
