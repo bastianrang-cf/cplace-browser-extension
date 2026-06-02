@@ -50,18 +50,18 @@ jobs:
             --clobber
 
       - name: Re-package without manifest key for Chrome Web Store
-        if: env.CHROME_CLIENT_ID != ''
+        if: vars.CHROME_CLIENT_ID != ''
         env:
-          CHROME_CLIENT_ID: ${{ env.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_ID: ${{ vars.CHROME_CLIENT_ID }}
         run: |
           rm -rf .output
           npm run package
 
       - name: Submit to Chrome Web Store
         env:
-          CHROME_EXTENSION_ID: ${{ env.CHROME_EXTENSION_ID }}
-          CHROME_CLIENT_ID: ${{ env.CHROME_CLIENT_ID }}
+          CHROME_EXTENSION_ID: ${{ vars.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ vars.CHROME_CLIENT_ID }}
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-        if: env.CHROME_CLIENT_ID != ''
+        if: vars.CHROME_CLIENT_ID != ''
         run: npx wxt submit --chrome-zip .output/*-chrome.zip
