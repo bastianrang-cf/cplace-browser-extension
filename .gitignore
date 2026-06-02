@@ -6,3 +6,4 @@ dist/
 .output/
 public/icons/
 key.pem
+.env.submit
