@@ -3,6 +3,8 @@
 [![Version](https://img.shields.io/github/v/release/bastianrang-cf/cplace-browser-extension)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![CI](https://github.com/bastianrang-cf/cplace-browser-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/bastianrang-cf/cplace-browser-extension/actions/workflows/ci.yml)
+[![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/aoeebikkhdfloboepjfbjlacpmhmkpeh)](https://chromewebstore.google.com/detail/cplace-browser-extension/aoeebikkhdfloboepjfbjlacpmhmkpeh)
+
 
 A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions.
 
