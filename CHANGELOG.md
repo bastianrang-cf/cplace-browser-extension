@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.0.0...v1.0.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* fix for git vars ([67ec63d](https://github.com/bastianrang-cf/cplace-browser-extension/commit/67ec63dfde5b7f6b579ed9b0107f59ae0abef4d5))
+
 ## [1.0.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.18.2...v1.0.0) (2026-06-02)
 
 
