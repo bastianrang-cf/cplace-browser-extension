@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.18.2...v1.0.0) (2026-06-02)
+
+
+### Features
+
+* add per-tenant snooze / soft-deactivate for modules ([#111](https://github.com/bastianrang-cf/cplace-browser-extension/issues/111)) ([7b56a4f](https://github.com/bastianrang-cf/cplace-browser-extension/commit/7b56a4fc8beecb4f09ea5879560bef859d608594)), closes [#110](https://github.com/bastianrang-cf/cplace-browser-extension/issues/110)
+
+
+### Miscellaneous Chores
+
+* release 1.0.0 ([36c30fd](https://github.com/bastianrang-cf/cplace-browser-extension/commit/36c30fd727de4c41816acf3523249716c5637288))
+
 ## [0.18.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v0.18.1...v0.18.2) (2026-05-22)
 
 
