@@ -53,6 +53,12 @@ button:hover {
   opacity: 0.65;
 }
 
+.popup-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: color-mix(in srgb, CanvasText 15%, transparent);
+}
+
 #activation-gate {
   display: flex;
   flex-direction: column;
@@ -102,15 +108,15 @@ button:hover {
 }
 
 .nav-group__list {
-  display: flex;
+  display: none;
   flex-direction: column;
   padding-left: 8px;
   margin-top: 2px;
   gap: 2px;
 }
 
-.nav-group__list[hidden] {
-  display: none;
+.nav-group--open .nav-group__list {
+  display: flex;
 }
 
 .nav-group__link {

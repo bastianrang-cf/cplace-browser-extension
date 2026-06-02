@@ -69,24 +69,25 @@ function buildSnoozeRow(label, state, until, onClick) {
   return btn;
 }
 
-// Renders the "Snooze" accordion: a tri-state toggle (off → snooze → soft-deactivate)
-// per enabled snoozable module, plus a leading "Snooze all" row when more than one
-// module is snoozable. Writes are keyed by tenant baseUrl and broadcast to every tab.
-function renderSnoozeMenu(container, baseUrl, snoozableMods) {
+// Builds a shared accordion group: a header toggle (icon + label + chevron) and an
+// empty list. The group expands on hover and on keyboard focus (no click needed),
+// keeping the Snooze and Nav-Links submenus visually and behaviourally identical.
+function createNavGroup({ icon, label }) {
   const group = document.createElement('div');
   group.className = 'nav-group';
 
   const toggle = document.createElement('button');
+  toggle.type = 'button';
   toggle.className = 'nav-group__toggle';
   toggle.setAttribute('aria-expanded', 'false');
 
   const iconEl = document.createElement('span');
-  iconEl.textContent = '💤';
   iconEl.className = 'btn-icon';
   iconEl.setAttribute('aria-hidden', 'true');
+  iconEl.textContent = icon;
 
   const labelEl = document.createElement('span');
-  labelEl.textContent = 'Snooze';
+  labelEl.textContent = label;
 
   const chevron = document.createElement('span');
   chevron.className = 'nav-group__chevron';
@@ -96,14 +97,25 @@ function renderSnoozeMenu(container, baseUrl, snoozableMods) {
 
   const list = document.createElement('div');
   list.className = 'nav-group__list';
-  list.hidden = true;
 
-  toggle.addEventListener('click', () => {
-    const expanded = list.hidden;
-    list.hidden = !expanded;
-    toggle.setAttribute('aria-expanded', String(expanded));
-    group.classList.toggle('nav-group--open', expanded);
-  });
+  const setOpen = (open) => {
+    group.classList.toggle('nav-group--open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+  };
+  group.addEventListener('mouseenter', () => setOpen(true));
+  group.addEventListener('mouseleave', () => setOpen(false));
+  group.addEventListener('focusin', () => setOpen(true));
+  group.addEventListener('focusout', () => setOpen(false));
+
+  group.append(toggle, list);
+  return { group, list };
+}
+
+// Renders the "Snooze" accordion: a tri-state toggle (off → snooze → soft-deactivate)
+// per enabled snoozable module, plus a leading "Snooze all" row when more than one
+// module is snoozable. Writes are keyed by tenant baseUrl and broadcast to every tab.
+function renderSnoozeMenu(container, baseUrl, snoozableMods) {
+  const { group, list } = createNavGroup({ icon: '💤', label: 'Snooze' });
 
   async function setState(moduleIds, state) {
     const map = pruneSnooze(await moduleSnoozeItem.getValue());
@@ -153,7 +165,6 @@ function renderSnoozeMenu(container, baseUrl, snoozableMods) {
     });
   }
 
-  group.append(toggle, list);
   container.appendChild(group);
   refresh();
 }
@@ -252,39 +263,11 @@ async function init() {
     container.appendChild(btn);
   }
 
-  if (showSnooze) {
-    renderSnoozeMenu(container, baseUrl, snoozableMods);
-  }
-
+  // Module entries first: per-module navigation-link accordions.
   for (const { mod, links } of navLinksMods) {
     if (!baseUrl) continue;
 
-    const group = document.createElement('div');
-    group.className = 'nav-group';
-
-    const toggle = document.createElement('button');
-    toggle.className = 'nav-group__toggle';
-    toggle.setAttribute('aria-expanded', 'false');
-
-    const iconEl = document.createElement('span');
-    iconEl.textContent = '🧭';
-    iconEl.className = 'btn-icon';
-    iconEl.setAttribute('aria-hidden', 'true');
-
-    const labelEl = document.createElement('span');
-    labelEl.textContent = mod.name;
-
-    const chevron = document.createElement('span');
-    chevron.className = 'nav-group__chevron';
-    chevron.setAttribute('aria-hidden', 'true');
-
-    toggle.appendChild(iconEl);
-    toggle.appendChild(labelEl);
-    toggle.appendChild(chevron);
-
-    const list = document.createElement('div');
-    list.className = 'nav-group__list';
-    list.hidden = true;
+    const { group, list } = createNavGroup({ icon: '🧭', label: mod.name });
 
     for (const { label, path } of links) {
       const a = document.createElement('a');
@@ -299,16 +282,17 @@ async function init() {
       list.appendChild(a);
     }
 
-    toggle.addEventListener('click', () => {
-      const expanded = list.hidden;
-      list.hidden = !expanded;
-      toggle.setAttribute('aria-expanded', String(expanded));
-      group.classList.toggle('nav-group--open', expanded);
-    });
-
-    group.appendChild(toggle);
-    group.appendChild(list);
     container.appendChild(group);
+  }
+
+  // Snooze last, set apart by a divider from the module entries above it.
+  if (showSnooze) {
+    if (container.childElementCount > 0) {
+      const divider = document.createElement('div');
+      divider.className = 'popup-divider';
+      container.appendChild(divider);
+    }
+    renderSnoozeMenu(container, baseUrl, snoozableMods);
   }
 }
 
