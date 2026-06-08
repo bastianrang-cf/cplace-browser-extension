@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.1.1...v1.1.2) (2026-06-08)
+
+
+### Bug Fixes
+
+* Refine extension description in wxt.config.js ([c6ff803](https://github.com/bastianrang-cf/cplace-browser-extension/commit/c6ff803227838ab5eb48c1660d572077b798ce8e))
+
 ## [1.1.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.1.0...v1.1.1) (2026-06-08)
 
 
