@@ -14,6 +14,8 @@ let pollMs            = 60_000;
 let applied           = false;
 let visibilityHandler = null;
 let resizeHandler     = null;
+let pageReadyHandler  = null;
+let pageReady         = false;
 let currentContext    = null;
 let panelPosition     = { ...DEFAULT_POS };
 let lastJobs          = [];
@@ -142,8 +144,16 @@ async function fetchRunningJobs() {
   }));
 }
 
-function startPolling() {
+// Start the eager fetch + interval, but only once everything needed for a
+// successful request is in place: the page-world script has announced it is
+// listening (pageReady), a tenant context is known (baseUrl), and the tab is
+// visible. The interval is anchored to this first real fetch, so on load the
+// data appears immediately instead of after one poll interval. Idempotent.
+function maybeStartPolling() {
   if (intervalId) return;
+  if (document.visibilityState !== 'visible') return;
+  if (!pageReady) return;
+  if (!currentContext?.baseUrl) return;
   fetchRunningJobs();
   intervalId = setInterval(fetchRunningJobs, pollMs);
 }
@@ -449,8 +459,16 @@ export default {
     if (applied) return;
     applied = true;
     document.addEventListener('cplace:batchJobsResult', onResult);
+    // The page-world script (page.js) dispatches this once it has registered its
+    // fetch listener. Registered here synchronously, so it is in place before the
+    // injected script executes in a later macrotask — the first fetch is never lost.
+    pageReadyHandler = () => {
+      pageReady = true;
+      maybeStartPolling();
+    };
+    document.addEventListener('cplace:batchJobsPageReady', pageReadyHandler);
     visibilityHandler = () => {
-      if (document.visibilityState === 'visible') startPolling();
+      if (document.visibilityState === 'visible') maybeStartPolling();
       else stopPolling();
     };
     document.addEventListener('visibilitychange', visibilityHandler);
@@ -465,7 +483,7 @@ export default {
       }
     };
     window.addEventListener('resize', resizeHandler);
-    if (document.visibilityState === 'visible') startPolling();
+    maybeStartPolling();
     tickId = setInterval(updateElapsedCounters, 1_000);
   },
   revert() {
@@ -474,6 +492,12 @@ export default {
     tickId = null;
     applied = false;
     document.removeEventListener('cplace:batchJobsResult', onResult);
+    // Note: pageReady is intentionally NOT reset — the page-world fetch listener
+    // persists on document for the page's lifetime, so once ready, always ready.
+    if (pageReadyHandler) {
+      document.removeEventListener('cplace:batchJobsPageReady', pageReadyHandler);
+      pageReadyHandler = null;
+    }
     if (visibilityHandler) {
       document.removeEventListener('visibilitychange', visibilityHandler);
       visibilityHandler = null;
@@ -491,5 +515,6 @@ export default {
   },
   onVersionDetected(context) {
     currentContext = context;
+    maybeStartPolling();
   },
 };
