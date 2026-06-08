@@ -6,7 +6,7 @@ export default defineConfig({
     ...((mode === 'development' || process.env.CPLACE_RELEASE_BUILD === 'true') && {
       key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwBMYuyODj0qWoNU5/6rIeXlWTQbBu2Box4JyKM5/EzB9BqdyWgGixbgR2SLKr0le4N0iTJKtiNiPgOVUHGEZN7PC0xiZZeIXdtJcHfBXS0aG84dr/lck/8Uzv/xjNpjIfpm8T6nSm3n9MLFXiG3zdQo8FfNDizY122b6dukxfCQFo/8L03RXTQCX8b8rs+QaApuoWTYbXrlmrEEA1f6V98dVP3Ku/+XgehHel66OnUqEjBLi0PS8ZzWhUv/tJmDQLW7JR7RVo4ulqtkklhz1+vy5G2M8E7gZfEdokZ1dDMcFr+Py5uy3eviHsz1GwfZvuc6F8FJVLnj2KcdlODxXBwIDAQAB',
     }),
-    description: 'Detects cplace pages and offers configurable modules like language switcher, css injects, low-code log toast messages, aso for cplace power users and solutions developers.',
+    description: 'Detects cplace pages and offers configurable modules for cplace power users and solutions developers.',
     permissions: ['storage', 'activeTab', 'scripting'],
     optional_host_permissions: ['<all_urls>'],
     icons: {
