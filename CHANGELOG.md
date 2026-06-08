@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.1.0...v1.1.1) (2026-06-08)
+
+
+### Bug Fixes
+
+* **popup:** make Navigation Links & Snooze work in Arc by resolving baseUrl via the per-tab popup URL ([#120](https://github.com/bastianrang-cf/cplace-browser-extension/issues/120)) ([0b26932](https://github.com/bastianrang-cf/cplace-browser-extension/commit/0b26932a75f92d5fe508f56a5b5bc601d0070ea1))
+
 ## [1.1.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.0.1...v1.1.0) (2026-06-08)
 
 
