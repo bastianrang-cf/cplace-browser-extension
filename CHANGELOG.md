@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.0.1...v1.1.0) (2026-06-08)
+
+
+### Features
+
+* unify popup submenus, open on hover, move snooze to bottom ([#114](https://github.com/bastianrang-cf/cplace-browser-extension/issues/114)) ([555ea63](https://github.com/bastianrang-cf/cplace-browser-extension/commit/555ea63ec3f3e959a2bfda4af793058271f9c4a5))
+
+
+### Bug Fixes
+
+* show Batch Jobs and Low-Code Logs immediately on page load ([#118](https://github.com/bastianrang-cf/cplace-browser-extension/issues/118)) ([8a4a981](https://github.com/bastianrang-cf/cplace-browser-extension/commit/8a4a981fceb40b5a9d6f98db54507f41e9d184e5)), closes [#109](https://github.com/bastianrang-cf/cplace-browser-extension/issues/109)
+
 ## [1.0.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.0.0...v1.0.1) (2026-06-02)
 
 
