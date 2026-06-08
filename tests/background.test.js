@@ -117,7 +117,7 @@ describe('background — onMessage: cplace:status', () => {
     );
 
     expect(fakeBrowser.action.enable).toHaveBeenCalledWith(42);
-    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 42, popup: 'popup.html' });
+    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 42, popup: 'popup.html?tabId=42' });
   });
 
   it('disables action when found is false', async () => {
@@ -170,6 +170,41 @@ describe('background — onMessage: cplace:status', () => {
 
     expect(fakeBrowser.action.enable).not.toHaveBeenCalled();
     expect(fakeBrowser.action.disable).not.toHaveBeenCalled();
+  });
+});
+
+describe('background — onMessage: cplace:context', () => {
+  it('binds tabId and baseUrl into the popup URL', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:context', baseUrl: 'https://demo.cplace.com/tenant' },
+      { tab: { id: 9 } },
+    );
+
+    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({
+      tabId: 9,
+      popup: 'popup.html?tabId=9&baseUrl=https%3A%2F%2Fdemo.cplace.com%2Ftenant',
+    });
+  });
+
+  it('sets only tabId when baseUrl is missing', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:context', baseUrl: null },
+      { tab: { id: 9 } },
+    );
+
+    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 9, popup: 'popup.html?tabId=9' });
+  });
+
+  it('does nothing when sender has no tab', async () => {
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:context', baseUrl: 'https://demo.cplace.com/tenant' },
+      {},
+    );
+
+    expect(fakeBrowser.action.setPopup).not.toHaveBeenCalled();
   });
 });
 

@@ -316,6 +316,35 @@ describe('content — version detection', () => {
       expect.objectContaining({ type: 'cplace:setBadge', text: '25.4' }),
     );
   });
+
+  it('sends cplace:context with the derived baseUrl when version is detected', async () => {
+    setCplacePresent();
+    await loadContent();
+    vi.clearAllMocks();
+
+    document.dispatchEvent(new CustomEvent('cplace:versionDetected', {
+      detail: { version: '25.4', context: '/tenant' },
+    }));
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+
+    expect(fakeBrowser.runtime.sendMessage).toHaveBeenCalledWith({
+      type: 'cplace:context',
+      baseUrl: `${location.origin}/tenant`,
+    });
+  });
+
+  it('no longer responds to cplace:getBaseUrl (popup reads baseUrl from its own URL)', async () => {
+    setCplacePresent();
+    await loadContent();
+    document.dispatchEvent(new CustomEvent('cplace:versionDetected', {
+      detail: { version: '25.4', context: '/tenant' },
+    }));
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+
+    const results = await fakeBrowser.runtime.onMessage.trigger({ type: 'cplace:getBaseUrl' });
+    const arr = Array.isArray(results) ? results : [results];
+    expect(arr.some((r) => r && typeof r === 'object' && 'baseUrl' in r)).toBe(false);
+  });
 });
 
 describe('content — cplace:moduleOptions listener', () => {

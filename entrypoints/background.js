@@ -104,12 +104,24 @@ export default defineBackground(() => {
       const tabId = sender.tab.id;
       if (msg.found) {
         browser.action.enable(tabId);
-        browser.action.setPopup({ tabId, popup: 'popup.html' });
+        // Bind this tab's id into the popup URL so the popup can address the right tab
+        // without tabs.query (unreliable in Arc). baseUrl is appended via cplace:context.
+        browser.action.setPopup({ tabId, popup: `popup.html?tabId=${tabId}` });
       } else {
         browser.action.disable(tabId);
         browser.action.setTitle({ tabId, title: 'cplace' });
         browser.action.setBadgeText({ tabId, text: '' });
       }
+      return;
+    }
+
+    if (msg.type === 'cplace:context' && sender.tab && sender.tab.id != null) {
+      const tabId = sender.tab.id;
+      // Carry the detected baseUrl in the per-tab popup URL; the popup renders its
+      // navigation links and snooze controls straight from this value.
+      let popup = `popup.html?tabId=${tabId}`;
+      if (msg.baseUrl) popup += `&baseUrl=${encodeURIComponent(msg.baseUrl)}`;
+      browser.action.setPopup({ tabId, popup });
       return;
     }
 

@@ -177,15 +177,12 @@ async function init() {
     return;
   }
 
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-
-  let baseUrl = null;
-  if (tab?.id != null) {
-    const baseInfo = await browser.tabs
-      .sendMessage(tab.id, { type: 'cplace:getBaseUrl' })
-      .catch(() => null);
-    baseUrl = baseInfo?.baseUrl ?? null;
-  }
+  // The background binds the active cplace tab's id and baseUrl into this popup's URL
+  // (popup.html?tabId=…&baseUrl=…) at detection time. Reading them here avoids querying
+  // the active tab, which returns the wrong/no tab in Arc's popup window context.
+  const params = new URLSearchParams(location.search);
+  const tabId = params.get('tabId') != null ? Number(params.get('tabId')) : null;
+  const baseUrl = params.get('baseUrl');
 
   const [storedMap, optsMap] = await Promise.all([
     enabledModulesItem.getValue(),
@@ -253,9 +250,9 @@ async function init() {
     labelEl.textContent = action.label;
     btn.appendChild(labelEl);
     btn.addEventListener('click', () => {
-      if (tab?.id != null) {
+      if (tabId != null) {
         browser.tabs
-          .sendMessage(tab.id, { type: 'cplace:moduleAction', moduleId, actionId: action.id })
+          .sendMessage(tabId, { type: 'cplace:moduleAction', moduleId, actionId: action.id })
           .catch(() => {});
       }
       window.close();

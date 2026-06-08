@@ -115,6 +115,14 @@ export default defineContentScript({
         context: detail.context ?? null,
       });
       lastContext = { version: detail.version || null, ...baseInfo };
+      // Hand the resolved baseUrl to the background so it can bind it to this tab's popup
+      // URL (popup.html?tabId=…&baseUrl=…). The popup reads it from its own URL instead of
+      // querying the active tab and messaging us back — unreliable in Arc's window model.
+      try {
+        browser.runtime.sendMessage({ type: 'cplace:context', baseUrl: lastContext.baseUrl });
+      } catch (_) {
+        // service worker may be asleep; safe to ignore — re-sent on the next detection
+      }
       // baseUrl is now known — re-evaluate snooze suppression for this tenant and arm
       // the expiry timer (modules applied before detection may need reverting).
       reconcile();
@@ -203,9 +211,6 @@ export default defineContentScript({
           scheduleSnoozeExpiry();
         });
         return;
-      }
-      if (msg.type === 'cplace:getBaseUrl') {
-        return Promise.resolve(lastContext);
       }
     });
 
