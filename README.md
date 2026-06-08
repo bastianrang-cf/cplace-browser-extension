@@ -1,4 +1,4 @@
-# cplace browser extension
+# cplace power user extension
 
 [![Version](https://img.shields.io/github/v/release/bastianrang-cf/cplace-browser-extension)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
