@@ -62,6 +62,12 @@ async function dispatchResult(detail) {
   await flushAsync();
 }
 
+// page.js announces readiness via this event; firing it lets the gated
+// maybeStartPolling() proceed (page-world fetch listener is "live").
+function dispatchReady() {
+  document.dispatchEvent(new CustomEvent('cplace:lowCodeLogsPageReady'));
+}
+
 describe('low-code-logs descriptor', () => {
   it('has correct id', async () => {
     const mod = await loadMod();
@@ -172,7 +178,9 @@ describe('apply()', () => {
     vi.useFakeTimers();
     const mod = await loadMod();
     mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady();
     mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady();
     expect(vi.getTimerCount()).toBe(1);
     mod.revert();
   });
@@ -182,7 +190,8 @@ describe('apply()', () => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
     const mod = await loadMod();
     mod.apply({}, { baseUrl: BASE_URL });
-    expect(vi.getTimerCount()).toBe(0);
+    dispatchReady();
+    expect(vi.getTimerCount()).toBe(0); // gated by hidden tab
     mod.revert();
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
   });
@@ -192,9 +201,78 @@ describe('apply()', () => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
     const mod = await loadMod();
     mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady();
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
     document.dispatchEvent(new Event('visibilitychange'));
     expect(vi.getTimerCount()).toBe(1);
+    mod.revert();
+  });
+});
+
+// Issue #109: on load the initial fetch must fire as soon as the page script is
+// ready AND a context with baseUrl is known; the interval is anchored to it.
+describe('eager initial fetch (issue #109)', () => {
+  it('does not poll or fetch before the page script is ready', async () => {
+    vi.useFakeTimers();
+    let dispatched = false;
+    document.addEventListener('cplace:fetchLowCodeLogs', () => { dispatched = true; });
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL }); // context present, no ready yet
+    expect(vi.getTimerCount()).toBe(0);   // polling gated by !pageReady
+    expect(dispatched).toBe(false);
+    mod.revert();
+  });
+
+  it('does not poll or fetch before a context with baseUrl is known', async () => {
+    vi.useFakeTimers();
+    let dispatched = false;
+    document.addEventListener('cplace:fetchLowCodeLogs', () => { dispatched = true; });
+    const mod = await loadMod();
+    mod.apply({}, null); // no context
+    dispatchReady();
+    expect(vi.getTimerCount()).toBe(0); // gated by missing baseUrl
+    expect(dispatched).toBe(false);
+    mod.revert();
+  });
+
+  it('starts the polling interval once page-ready and context are present', async () => {
+    vi.useFakeTimers();
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    expect(vi.getTimerCount()).toBe(0); // nothing before ready
+    dispatchReady();
+    expect(vi.getTimerCount()).toBe(1); // polling interval started after ready
+    mod.revert();
+  });
+
+  it('issues the initial fetch when context arrives after apply (onVersionDetected)', async () => {
+    let dispatched = 0;
+    let lastBaseUrl = null;
+    document.addEventListener('cplace:fetchLowCodeLogs', (e) => {
+      dispatched++;
+      lastBaseUrl = e.detail.baseUrl;
+    });
+    const mod = await loadMod();
+    mod.apply({}, null); // applied before version detected → no context
+    dispatchReady();     // page ready, but still no context → no fetch
+    await flushAsync();
+    expect(dispatched).toBe(0);
+    mod.onVersionDetected({ baseUrl: BASE_URL }); // context now known → eager fetch
+    await flushAsync();
+    expect(dispatched).toBe(1);
+    expect(lastBaseUrl).toBe(BASE_URL);
+    mod.revert();
+  });
+
+  it('issues only one initial fetch when ready and onVersionDetected both fire', async () => {
+    let dispatched = 0;
+    document.addEventListener('cplace:fetchLowCodeLogs', () => { dispatched++; });
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady();                              // starts interval + first fetch
+    mod.onVersionDetected({ baseUrl: BASE_URL }); // no-op: interval already running
+    await flushAsync();
+    expect(dispatched).toBe(1);
     mod.revert();
   });
 });
@@ -209,6 +287,7 @@ describe('cache behaviour', () => {
     let dispatched = false;
     document.addEventListener('cplace:fetchLowCodeLogs', () => { dispatched = true; });
     mod.apply({ pollIntervalSec: 60 }, { baseUrl: BASE_URL });
+    dispatchReady();
     await flushAsync();
     expect(dispatched).toBe(false);
     mod.revert();
@@ -223,6 +302,7 @@ describe('cache behaviour', () => {
     let dispatched = false;
     document.addEventListener('cplace:fetchLowCodeLogs', () => { dispatched = true; });
     mod.apply({ pollIntervalSec: 15 }, { baseUrl: BASE_URL });
+    dispatchReady();
     await flushAsync();
     expect(dispatched).toBe(true);
     mod.revert();
@@ -263,6 +343,7 @@ describe('reload safety', () => {
 
     const mod = await loadMod();
     mod.apply({ pollIntervalSec: 60 }, { baseUrl: BASE_URL });
+    dispatchReady();
     // The cache-fresh path renders without dispatching fetch.
     await flushAsync();
     expect(document.querySelectorAll('.cplace-lcl-toast').length).toBe(1);

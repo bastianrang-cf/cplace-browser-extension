@@ -18,6 +18,17 @@ async function loadMod() {
   return mod;
 }
 
+const CONTEXT = {
+  version: '25.4', origin: 'https://h', instance: 'h', tenant: 'training',
+  baseUrl: 'https://h/training', contextPath: '/training/',
+};
+
+// page.js announces readiness via this event; firing it lets the gated
+// maybeStartPolling() proceed (page-world fetch listener is "live").
+function dispatchReady() {
+  document.dispatchEvent(new CustomEvent('cplace:batchJobsPageReady'));
+}
+
 function rowHtml({ name, href, startedAt, state, duration }) {
   return `
     <tr class="">
@@ -72,9 +83,11 @@ describe('batch-jobs module', () => {
     it('is idempotent — calling twice does not double-register intervals', async () => {
       vi.useFakeTimers();
       const mod = await loadMod();
-      mod.apply();
-      mod.apply();
-      expect(vi.getTimerCount()).toBe(2);
+      mod.apply({}, CONTEXT);
+      dispatchReady();
+      mod.apply({}, CONTEXT);
+      dispatchReady();
+      expect(vi.getTimerCount()).toBe(2); // tickId (elapsed counter) + polling interval
       mod.revert();
     });
 
@@ -82,8 +95,9 @@ describe('batch-jobs module', () => {
       vi.useFakeTimers();
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
       const mod = await loadMod();
-      mod.apply();
-      expect(vi.getTimerCount()).toBe(1); // only tickId (elapsed counter), no polling interval
+      mod.apply({}, CONTEXT);
+      dispatchReady();
+      expect(vi.getTimerCount()).toBe(1); // only tickId; polling gated by hidden tab
       mod.revert();
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
     });
@@ -92,7 +106,8 @@ describe('batch-jobs module', () => {
       vi.useFakeTimers();
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
       const mod = await loadMod();
-      mod.apply();
+      mod.apply({}, CONTEXT);
+      dispatchReady();
       expect(vi.getTimerCount()).toBe(1);
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
       document.dispatchEvent(new Event('visibilitychange'));
@@ -103,13 +118,81 @@ describe('batch-jobs module', () => {
     it('stops polling interval when tab becomes hidden', async () => {
       vi.useFakeTimers();
       const mod = await loadMod();
-      mod.apply();
+      mod.apply({}, CONTEXT);
+      dispatchReady();
       expect(vi.getTimerCount()).toBe(2);
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
       document.dispatchEvent(new Event('visibilitychange'));
       expect(vi.getTimerCount()).toBe(1); // only elapsed counter remains
       mod.revert();
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    });
+  });
+
+  // Issue #109: on load the initial fetch must fire as soon as the page script is
+  // ready AND a context with baseUrl is known; the interval is anchored to it.
+  describe('eager initial fetch (issue #109)', () => {
+    it('does not poll or fetch before the page script is ready', async () => {
+      vi.useFakeTimers();
+      const fetchListener = vi.fn();
+      document.addEventListener('cplace:fetchBatchJobs', fetchListener);
+      const mod = await loadMod();
+      mod.apply({}, CONTEXT); // context present, but no ready event yet
+      expect(vi.getTimerCount()).toBe(1); // only tickId; polling gated by !pageReady
+      expect(fetchListener).not.toHaveBeenCalled();
+      document.removeEventListener('cplace:fetchBatchJobs', fetchListener);
+      mod.revert();
+    });
+
+    it('does not poll or fetch before a context with baseUrl is known', async () => {
+      vi.useFakeTimers();
+      const fetchListener = vi.fn();
+      document.addEventListener('cplace:fetchBatchJobs', fetchListener);
+      const mod = await loadMod();
+      mod.apply(); // no context
+      dispatchReady();
+      expect(vi.getTimerCount()).toBe(1); // only tickId; polling gated by missing baseUrl
+      expect(fetchListener).not.toHaveBeenCalled();
+      document.removeEventListener('cplace:fetchBatchJobs', fetchListener);
+      mod.revert();
+    });
+
+    it('starts the polling interval once page-ready and context are present', async () => {
+      vi.useFakeTimers();
+      const mod = await loadMod();
+      mod.apply({}, CONTEXT);
+      expect(vi.getTimerCount()).toBe(1); // only tickId before ready
+      dispatchReady();
+      expect(vi.getTimerCount()).toBe(2); // polling interval started after ready
+      mod.revert();
+    });
+
+    it('issues the initial fetch when context arrives after apply (onVersionDetected)', async () => {
+      const fetchListener = vi.fn();
+      document.addEventListener('cplace:fetchBatchJobs', fetchListener);
+      const mod = await loadMod();
+      mod.apply();      // applied before version detected → no context
+      dispatchReady();  // page ready, but still no context → no fetch
+      expect(fetchListener).not.toHaveBeenCalled();
+      mod.onVersionDetected(CONTEXT); // context now known → eager fetch fires
+      await new Promise((r) => setTimeout(r, 0)); // flush the cache lookup
+      expect(fetchListener).toHaveBeenCalledTimes(1);
+      expect(fetchListener.mock.calls[0][0].detail.baseUrl).toBe(CONTEXT.baseUrl);
+      document.removeEventListener('cplace:fetchBatchJobs', fetchListener);
+      mod.revert();
+    });
+
+    it('issues only one initial fetch when ready and onVersionDetected both fire', async () => {
+      const fetchListener = vi.fn();
+      document.addEventListener('cplace:fetchBatchJobs', fetchListener);
+      const mod = await loadMod();
+      mod.apply({}, CONTEXT);
+      dispatchReady();                 // starts interval + first fetch
+      mod.onVersionDetected(CONTEXT);  // no-op: interval already running
+      await new Promise((r) => setTimeout(r, 0));
+      expect(fetchListener).toHaveBeenCalledTimes(1);
+      document.removeEventListener('cplace:fetchBatchJobs', fetchListener);
+      mod.revert();
     });
   });
 
@@ -149,7 +232,8 @@ describe('batch-jobs module', () => {
     it('clears both intervals', async () => {
       vi.useFakeTimers();
       const mod = await loadMod();
-      mod.apply();
+      mod.apply({}, CONTEXT);
+      dispatchReady();
       expect(vi.getTimerCount()).toBe(2);
       mod.revert();
       expect(vi.getTimerCount()).toBe(0);
@@ -436,6 +520,7 @@ describe('batch-jobs module', () => {
 
       const mod = await loadMod();
       mod.apply({}, context);
+      dispatchReady(); // triggers the gated eager fetch (cache-hit path)
 
       // Let the cache lookup promise resolve
       await new Promise((r) => setTimeout(r, 0));
@@ -467,6 +552,7 @@ describe('batch-jobs module', () => {
 
       const mod = await loadMod();
       mod.apply({}, context);
+      dispatchReady(); // triggers the gated eager fetch (cache-stale path)
       await new Promise((r) => setTimeout(r, 0));
 
       expect(fetchListener).toHaveBeenCalledTimes(1);
