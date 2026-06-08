@@ -174,27 +174,30 @@ describe('background — onMessage: cplace:status', () => {
 });
 
 describe('background — onMessage: cplace:context', () => {
-  it('binds tabId and baseUrl into the popup URL', async () => {
+  it('stores the tab baseUrl in session storage (not the popup URL)', async () => {
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:context', baseUrl: 'https://demo.cplace.com/tenant' },
       { tab: { id: 9 } },
     );
+    await new Promise((r) => setTimeout(r, 0));
 
-    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({
-      tabId: 9,
-      popup: 'popup.html?tabId=9&baseUrl=https%3A%2F%2Fdemo.cplace.com%2Ftenant',
-    });
+    const stored = await fakeBrowser.storage.session.get('tabBaseUrl');
+    expect(stored.tabBaseUrl).toEqual({ 9: 'https://demo.cplace.com/tenant' });
+    expect(fakeBrowser.action.setPopup).not.toHaveBeenCalled();
   });
 
-  it('sets only tabId when baseUrl is missing', async () => {
+  it('removes the tab entry when baseUrl is missing', async () => {
+    await fakeBrowser.storage.session.set({ tabBaseUrl: { 9: 'https://old.example.com' } });
     await loadBackground();
     await fakeBrowser.runtime.onMessage.trigger(
       { type: 'cplace:context', baseUrl: null },
       { tab: { id: 9 } },
     );
+    await new Promise((r) => setTimeout(r, 0));
 
-    expect(fakeBrowser.action.setPopup).toHaveBeenCalledWith({ tabId: 9, popup: 'popup.html?tabId=9' });
+    const stored = await fakeBrowser.storage.session.get('tabBaseUrl');
+    expect(stored.tabBaseUrl).toEqual({});
   });
 
   it('does nothing when sender has no tab', async () => {
@@ -203,8 +206,21 @@ describe('background — onMessage: cplace:context', () => {
       { type: 'cplace:context', baseUrl: 'https://demo.cplace.com/tenant' },
       {},
     );
+    await new Promise((r) => setTimeout(r, 0));
 
-    expect(fakeBrowser.action.setPopup).not.toHaveBeenCalled();
+    const stored = await fakeBrowser.storage.session.get('tabBaseUrl');
+    expect(stored.tabBaseUrl ?? {}).toEqual({});
+  });
+
+  it('clears the stored baseUrl when the tab is removed', async () => {
+    await fakeBrowser.storage.session.set({ tabBaseUrl: { 9: 'https://demo.cplace.com/tenant' } });
+    await loadBackground();
+
+    await fakeBrowser.tabs.onRemoved.trigger(9, { windowId: 1, isWindowClosing: false });
+    await new Promise((r) => setTimeout(r, 0));
+
+    const stored = await fakeBrowser.storage.session.get('tabBaseUrl');
+    expect(stored.tabBaseUrl).toEqual({});
   });
 });
 
