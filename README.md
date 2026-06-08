@@ -6,7 +6,7 @@
 [![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/aoeebikkhdfloboepjfbjlacpmhmkpeh)](https://chromewebstore.google.com/detail/cplace-browser-extension/aoeebikkhdfloboepjfbjlacpmhmkpeh)
 
 
-A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions.
+A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions - not officially supported by [cplace](https://www.cplace.com/).
 
 **Core behavior:** detects whether the current page is a cplace application (by the presence of `id="cplace"` in the DOM) and enables the toolbar icon on cplace pages (disabling/greying it out on all other pages). Optional behaviors are implemented as toggleable **modules**.
 
