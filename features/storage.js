@@ -12,3 +12,7 @@ export const lowCodeLogsCacheItem = storage.defineItem('local:lowCodeLogsCache',
 export const lowCodeLogsSeenItem = storage.defineItem('local:lowCodeLogsSeen', { fallback: {} });
 export const lowCodeLogsFiltersItem = storage.defineItem('local:lowCodeLogsFilters', { fallback: {} });
 export const domainCssByTabItem = storage.defineItem('session:domainCssByTab', { fallback: {} });
+// Detected cplace baseUrl per tab id, written by the background on cplace:context and read
+// by the popup. Kept in session storage (not the popup URL) so the value never flows from
+// location.search into a navigation target. { [tabId]: baseUrl }
+export const tabBaseUrlItem = storage.defineItem('session:tabBaseUrl', { fallback: {} });

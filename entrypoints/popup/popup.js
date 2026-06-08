@@ -1,5 +1,5 @@
 import { registry } from '../../features/registry.js';
-import { enabledModulesItem, moduleOptionsItem, moduleSnoozeItem } from '../../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, moduleSnoozeItem, tabBaseUrlItem } from '../../features/storage.js';
 import { hasUniversalHostAccess, requestUniversalHostAccess } from '../../features/permissions.js';
 import { pruneSnooze, snoozeState, snoozeEntryFor } from '../../features/snooze.js';
 
@@ -177,20 +177,20 @@ async function init() {
     return;
   }
 
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  // The background binds the active cplace tab's id into this popup's URL (popup.html?tabId=…)
+  // at detection time and stores that tab's detected baseUrl in session storage. Reading from
+  // these avoids querying the active tab — which returns the wrong/no tab in Arc's popup
+  // window context. baseUrl is read from storage (not the URL), so it never flows from
+  // location.search into a navigation target.
+  const tabIdParam = new URLSearchParams(location.search).get('tabId');
+  const tabId = tabIdParam != null ? Number(tabIdParam) : null;
 
-  let baseUrl = null;
-  if (tab?.id != null) {
-    const baseInfo = await browser.tabs
-      .sendMessage(tab.id, { type: 'cplace:getBaseUrl' })
-      .catch(() => null);
-    baseUrl = baseInfo?.baseUrl ?? null;
-  }
-
-  const [storedMap, optsMap] = await Promise.all([
+  const [storedMap, optsMap, tabBaseUrls] = await Promise.all([
     enabledModulesItem.getValue(),
     moduleOptionsItem.getValue(),
+    tabBaseUrlItem.getValue(),
   ]);
+  const baseUrl = (tabId != null ? tabBaseUrls[tabId] : null) ?? null;
   const enabledMap = { ...registry.defaultEnabledMap(), ...(storedMap || {}) };
 
   const actionItems = [];
@@ -253,9 +253,9 @@ async function init() {
     labelEl.textContent = action.label;
     btn.appendChild(labelEl);
     btn.addEventListener('click', () => {
-      if (tab?.id != null) {
+      if (tabId != null) {
         browser.tabs
-          .sendMessage(tab.id, { type: 'cplace:moduleAction', moduleId, actionId: action.id })
+          .sendMessage(tabId, { type: 'cplace:moduleAction', moduleId, actionId: action.id })
           .catch(() => {});
       }
       window.close();

@@ -1,6 +1,6 @@
 import { defineBackground } from '#imports';
 import { registry } from '../features/registry.js';
-import { enabledModulesItem, moduleOptionsItem, domainCssByTabItem } from '../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, domainCssByTabItem, tabBaseUrlItem } from '../features/storage.js';
 import { hasUniversalHostAccess } from '../features/permissions.js';
 
 const CONTENT_SCRIPT_ID = 'cplace-content';
@@ -104,12 +104,24 @@ export default defineBackground(() => {
       const tabId = sender.tab.id;
       if (msg.found) {
         browser.action.enable(tabId);
-        browser.action.setPopup({ tabId, popup: 'popup.html' });
+        // Bind this tab's id into the popup URL so the popup can address the right tab
+        // without tabs.query (unreliable in Arc). baseUrl is appended via cplace:context.
+        browser.action.setPopup({ tabId, popup: `popup.html?tabId=${tabId}` });
       } else {
         browser.action.disable(tabId);
         browser.action.setTitle({ tabId, title: 'cplace' });
         browser.action.setBadgeText({ tabId, text: '' });
       }
+      return;
+    }
+
+    if (msg.type === 'cplace:context' && sender.tab && sender.tab.id != null) {
+      // Stash the detected baseUrl in session storage keyed by tab id; the popup reads it
+      // from there (not from its URL), so the value never reaches a navigation sink as
+      // tainted input. The popup URL only carries the numeric tabId (set on cplace:status).
+      setTabBaseUrl(sender.tab.id, msg.baseUrl || null).catch((e) => {
+        console.warn('[cplace] tab baseUrl store failed:', e);
+      });
       return;
     }
 
@@ -157,6 +169,13 @@ export default defineBackground(() => {
     }
   });
 
+  async function setTabBaseUrl(tabId, baseUrl) {
+    const map = await tabBaseUrlItem.getValue();
+    if (baseUrl) map[tabId] = baseUrl;
+    else delete map[tabId];
+    await tabBaseUrlItem.setValue(map);
+  }
+
   async function applyDomainCss(tabId, css) {
     const map = await domainCssByTabItem.getValue();
     const prev = map[tabId];
@@ -188,10 +207,15 @@ export default defineBackground(() => {
   }
 
   browser.tabs.onRemoved.addListener(async (tabId) => {
-    const map = await domainCssByTabItem.getValue();
-    if (tabId in map) {
-      delete map[tabId];
-      await domainCssByTabItem.setValue(map);
+    const cssMap = await domainCssByTabItem.getValue();
+    if (tabId in cssMap) {
+      delete cssMap[tabId];
+      await domainCssByTabItem.setValue(cssMap);
+    }
+    const baseMap = await tabBaseUrlItem.getValue();
+    if (tabId in baseMap) {
+      delete baseMap[tabId];
+      await tabBaseUrlItem.setValue(baseMap);
     }
   });
 });
