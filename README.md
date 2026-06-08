@@ -54,9 +54,9 @@ The extension asks for page access **on demand** rather than at install time. Af
 
 ## Installation
 
-### From the Chrome Web Store / Edge Add-ons store
+### From the Chrome Web Store
 
-> Not yet published — load manually (see below).
+Install directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/cplace-browser-extension/aoeebikkhdfloboepjfbjlacpmhmkpeh) — works in Chrome and Edge.
 
 ### :wrench: Install in 1 Minute (zip from Release)
 
@@ -65,12 +65,6 @@ The extension asks for page access **on demand** rather than at install time. Af
 3. Enable **Developer mode**.
 4. Drag and drop the downloaded `.zip` file onto the extensions page.
 5. Open the extension **Options** to enable the features you want.
-
-### Manual (unpacked)
-
-1. Clone this repo and run `npm install && npm run build`.
-2. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge) and enable **Developer mode**.
-3. Click **Load unpacked** and select the `.output/chrome-mv3/` directory.
 
 ---
 
