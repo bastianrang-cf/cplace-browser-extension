@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.1.2...v1.2.0) (2026-06-12)
+
+
+### Features
+
+* **overlays:** theme batch-jobs, low-code-logs and system-info from cplace instance CSS vars ([#126](https://github.com/bastianrang-cf/cplace-browser-extension/issues/126)) ([d649302](https://github.com/bastianrang-cf/cplace-browser-extension/commit/d6493020529a7aeb5fbc30c774baa5abe4e82893))
+
 ## [1.1.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.1.1...v1.1.2) (2026-06-08)
 
 
