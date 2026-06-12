@@ -136,6 +136,29 @@ A WXT build module at `modules/cplace-features.js` stages flattened, renamed fea
 
 Releases are driven by [release-please](https://github.com/googleapis/release-please). Commits to `main` must follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.). On merge of the release PR, GitHub Actions builds and uploads `.zip` files for Chrome, Firefox, and Safari to the GitHub Release.
 
+When the `CHROME_CLIENT_ID` repository variable is set, the workflow also submits the Chrome zip to the Chrome Web Store via `wxt submit`, authenticating with these repository secrets/variables:
+
+| Name | Type | Purpose |
+|------|------|---------|
+| `CHROME_EXTENSION_ID` | Variable | Target extension ID in the store |
+| `CHROME_CLIENT_ID` | Variable | Google OAuth client ID |
+| `CHROME_CLIENT_SECRET` | Secret | Google OAuth client secret |
+| `CHROME_REFRESH_TOKEN` | Secret | Google OAuth refresh token |
+
+### Refreshing the Chrome Web Store token
+
+If the submit step fails with `invalid_grant` / `Token has been expired or revoked`, the `CHROME_REFRESH_TOKEN` has lapsed. Refresh tokens expire after 7 days while the OAuth consent screen is in **Testing** — set it to **In production** in the [Google Cloud Console](https://console.cloud.google.com/auth/audience) to stop that.
+
+`wxt submit init` no longer works because Google disabled its out-of-band OAuth flow. Generate a new token with the helper script instead (loopback flow, works with the existing "Desktop app" client):
+
+```bash
+CHROME_CLIENT_ID="<client id>" \
+CHROME_CLIENT_SECRET="<client secret>" \
+node scripts/get-chrome-token.mjs
+```
+
+It opens a browser for sign-in and prints a fresh refresh token. Save it as the `CHROME_REFRESH_TOKEN` secret, then re-run the failed release job.
+
 ---
 
 ## License
