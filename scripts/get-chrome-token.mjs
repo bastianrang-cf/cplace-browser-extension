@@ -31,7 +31,7 @@ const server = http.createServer(async (req, res) => {
 
   const error = url.searchParams.get('error');
   if (error) {
-    res.end(`Authorization failed: ${error}`);
+    res.end('Authorization failed — see terminal.');
     console.error('Authorization failed:', error);
     return shutdown(1);
   }
