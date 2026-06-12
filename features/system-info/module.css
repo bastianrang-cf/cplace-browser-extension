@@ -4,7 +4,27 @@
   z-index: 2147483647;
   font-family: system-ui, sans-serif;
   font-size: 13px;
-  color: #111827;
+  color: var(--cplace-si-text);
+
+  /* Theme tokens — inherit the cplace instance's Look-and-Feel theme. Every theme.less
+     variable is exposed by cplace as a :root CSS custom property (@foo-bar -> --foo-bar),
+     so the dialog picks up the tenant's colors automatically. The fallbacks reproduce the
+     extension's own palette on instances (or older versions) that define no such tokens.
+     The warn-row and error-box tints have no dedicated token, so they are derived from the
+     semantic brand colors via color-mix (per the cplace theming guidelines). */
+  --cplace-si-accent:         var(--brand-primary-components, var(--brand-primary, #1a56db));
+  --cplace-si-on-accent:      #fff;
+  --cplace-si-link:           var(--link-color, var(--brand-primary, #1a56db));
+  --cplace-si-surface:        var(--surface-0, #fff);
+  --cplace-si-surface-alt:    var(--surface-200, #f9fafb);
+  --cplace-si-surface-strong: var(--surface-200, #f3f4f6);
+  --cplace-si-text:           var(--text-color, #111827);
+  --cplace-si-heading:        var(--text-color, #374151);
+  --cplace-si-text-muted:     var(--text-muted, #4b5563);
+  --cplace-si-border:         var(--widget-border-color, #e5e7eb);
+  --cplace-si-border-subtle:  var(--widget-border-color, #f3f4f6);
+  --cplace-si-danger:         var(--brand-danger, #dc2626);
+  --cplace-si-warning:        var(--brand-warning, #d97706);
 }
 #cplace-system-info-dialog .cplace-si-backdrop {
   position: absolute;
@@ -16,7 +36,7 @@
   padding: 24px;
 }
 #cplace-system-info-dialog .cplace-si-panel {
-  background: #fff;
+  background: var(--cplace-si-surface);
   border-radius: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   width: min(880px, 100%);
@@ -30,8 +50,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #1a56db;
-  color: #fff;
+  background: var(--cplace-si-accent);
+  color: var(--cplace-si-on-accent);
   flex-shrink: 0;
 }
 #cplace-system-info-dialog .cplace-si-header span {
@@ -41,7 +61,7 @@
 #cplace-system-info-dialog .cplace-si-close {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--cplace-si-on-accent);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -58,7 +78,7 @@
 #cplace-system-info-dialog .cplace-si-section-title {
   font-weight: 600;
   font-size: 13px;
-  color: #374151;
+  color: var(--cplace-si-heading);
   margin: 14px 0 6px;
 }
 #cplace-system-info-dialog .cplace-si-section-title:first-child {
@@ -73,13 +93,13 @@
   gap: 4px 16px;
   margin: 0;
   padding: 10px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--cplace-si-surface-alt);
+  border: 1px solid var(--cplace-si-border);
   border-radius: 6px;
 }
 #cplace-system-info-dialog .cplace-si-dl dt {
   font-weight: 600;
-  color: #4b5563;
+  color: var(--cplace-si-text-muted);
 }
 #cplace-system-info-dialog .cplace-si-dl dd {
   margin: 0;
@@ -89,7 +109,7 @@
 #cplace-system-info-dialog .cplace-si-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--cplace-si-border);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -97,13 +117,13 @@
 #cplace-system-info-dialog .cplace-si-table td {
   text-align: left;
   padding: 6px 10px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--cplace-si-border-subtle);
   vertical-align: top;
 }
 #cplace-system-info-dialog .cplace-si-table th {
-  background: #f3f4f6;
+  background: var(--cplace-si-surface-strong);
   font-weight: 600;
-  color: #374151;
+  color: var(--cplace-si-heading);
   position: sticky;
   top: 0;
 }
@@ -111,13 +131,13 @@
   border-bottom: none;
 }
 #cplace-system-info-dialog .cplace-si-table tbody tr:nth-child(even) {
-  background: #fafafa;
+  background: var(--cplace-si-surface-alt);
 }
 #cplace-system-info-dialog .cplace-si-table tbody tr.cplace-si-row-warn {
-  background: #fefce8;
+  background: color-mix(in srgb, var(--cplace-si-warning) 14%, var(--cplace-si-surface));
 }
 #cplace-system-info-dialog .cplace-si-table tbody tr.cplace-si-row-warn:nth-child(even) {
-  background: #fef9c3;
+  background: color-mix(in srgb, var(--cplace-si-warning) 22%, var(--cplace-si-surface));
 }
 #cplace-system-info-dialog .cplace-si-links {
   display: flex;
@@ -126,7 +146,7 @@
   flex-wrap: wrap;
 }
 #cplace-system-info-dialog .cplace-si-links a {
-  color: #1a56db;
+  color: var(--cplace-si-link);
   text-decoration: none;
   font-weight: 500;
 }
@@ -136,8 +156,8 @@
 #cplace-system-info-dialog .cplace-si-error {
   margin: 0;
   padding: 12px 14px;
-  color: #991b1b;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
+  color: color-mix(in srgb, var(--cplace-si-danger) 75%, #000);
+  background: color-mix(in srgb, var(--cplace-si-danger) 12%, var(--cplace-si-surface));
+  border: 1px solid color-mix(in srgb, var(--cplace-si-danger) 30%, var(--cplace-si-surface));
   border-radius: 6px;
 }
