@@ -10,6 +10,24 @@
   font-size: 13px;
   max-width: 480px;
   pointer-events: none;
+
+  /* Theme tokens — inherit the cplace instance's Look-and-Feel theme. Every theme.less
+     variable is exposed by cplace as a :root CSS custom property (@foo-bar -> --foo-bar),
+     so the toasts pick up the tenant's colors automatically. The fallbacks reproduce the
+     extension's own palette on instances (or older versions) that define no such tokens. */
+  --cplace-lcl-accent:        var(--brand-primary-components, var(--brand-primary, #1a56db));
+  --cplace-lcl-on-accent:     #fff;
+  --cplace-lcl-link:          var(--link-color, var(--brand-primary, #1a56db));
+  --cplace-lcl-surface:       var(--surface-0, #fff);
+  --cplace-lcl-surface-alt:   var(--surface-200, #f9fafb);
+  --cplace-lcl-text:          var(--text-color, #111827);
+  --cplace-lcl-text-muted:    var(--text-muted, #6b7280);
+  --cplace-lcl-text-faint:    var(--text-muted, #9ca3af);
+  --cplace-lcl-border:        var(--widget-border-color, #d1d5db);
+  --cplace-lcl-border-subtle: var(--widget-border-color, #f3f4f6);
+  --cplace-lcl-error:         var(--brand-danger, #dc2626);
+  --cplace-lcl-warn:          var(--brand-warning, #d97706);
+  --cplace-lcl-info:          var(--brand-info, #2563eb);
 }
 #cplace-low-code-logs-stack > * {
   pointer-events: auto;
@@ -19,8 +37,9 @@
 }
 
 #cplace-low-code-logs-stack .cplace-lcl-toast {
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--cplace-lcl-surface);
+  color: var(--cplace-lcl-text);
+  border: 1px solid var(--cplace-lcl-border);
   border-left-width: 4px;
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
@@ -32,18 +51,18 @@
   from { transform: translateX(8px); opacity: 0; }
   to   { transform: translateX(0);   opacity: 1; }
 }
-#cplace-low-code-logs-stack .cplace-lcl-toast--error  { border-left-color: #dc2626; }
-#cplace-low-code-logs-stack .cplace-lcl-toast--warn   { border-left-color: #d97706; }
-#cplace-low-code-logs-stack .cplace-lcl-toast--info   { border-left-color: #2563eb; }
-#cplace-low-code-logs-stack .cplace-lcl-toast--debug  { border-left-color: #9ca3af; }
+#cplace-low-code-logs-stack .cplace-lcl-toast--error  { border-left-color: var(--cplace-lcl-error); }
+#cplace-low-code-logs-stack .cplace-lcl-toast--warn   { border-left-color: var(--cplace-lcl-warn); }
+#cplace-low-code-logs-stack .cplace-lcl-toast--info   { border-left-color: var(--cplace-lcl-info); }
+#cplace-low-code-logs-stack .cplace-lcl-toast--debug  { border-left-color: var(--cplace-lcl-text-faint); }
 
 #cplace-low-code-logs-stack .cplace-lcl-toast-header {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: #f9fafb;
-  border-bottom: 1px solid #f3f4f6;
+  background: var(--cplace-lcl-surface-alt);
+  border-bottom: 1px solid var(--cplace-lcl-border-subtle);
   border-top-left-radius: 2px;
   border-top-right-radius: 6px;
   touch-action: none;
@@ -57,12 +76,12 @@
   font-weight: 700;
   flex-shrink: 0;
 }
-#cplace-low-code-logs-stack .cplace-lcl-toast--error  .cplace-lcl-level { color: #dc2626; }
-#cplace-low-code-logs-stack .cplace-lcl-toast--warn   .cplace-lcl-level { color: #d97706; }
-#cplace-low-code-logs-stack .cplace-lcl-toast--info   .cplace-lcl-level { color: #2563eb; }
-#cplace-low-code-logs-stack .cplace-lcl-toast--debug  .cplace-lcl-level { color: #9ca3af; }
+#cplace-low-code-logs-stack .cplace-lcl-toast--error  .cplace-lcl-level { color: var(--cplace-lcl-error); }
+#cplace-low-code-logs-stack .cplace-lcl-toast--warn   .cplace-lcl-level { color: var(--cplace-lcl-warn); }
+#cplace-low-code-logs-stack .cplace-lcl-toast--info   .cplace-lcl-level { color: var(--cplace-lcl-info); }
+#cplace-low-code-logs-stack .cplace-lcl-toast--debug  .cplace-lcl-level { color: var(--cplace-lcl-text-faint); }
 #cplace-low-code-logs-stack .cplace-lcl-timestamp {
-  color: #6b7280;
+  color: var(--cplace-lcl-text-muted);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   flex: 1;
@@ -74,7 +93,7 @@
 #cplace-low-code-logs-stack .cplace-lcl-close-btn {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--cplace-lcl-text-muted);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
@@ -82,11 +101,11 @@
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-btn:hover,
 #cplace-low-code-logs-stack .cplace-lcl-close-btn:hover {
-  color: #111827;
+  color: var(--cplace-lcl-text);
 }
 #cplace-low-code-logs-stack .cplace-lcl-message {
   padding: 8px 10px 12px;
-  color: #111827;
+  color: var(--cplace-lcl-text);
   word-break: break-word;
 }
 #cplace-low-code-logs-stack .cplace-lcl-message--collapsed {
@@ -102,11 +121,11 @@
 }
 #cplace-low-code-logs-stack .cplace-lcl-stack summary {
   cursor: pointer;
-  color: #6b7280;
+  color: var(--cplace-lcl-text-muted);
 }
 #cplace-low-code-logs-stack .cplace-lcl-stack pre {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--cplace-lcl-surface-alt);
+  border: 1px solid var(--cplace-lcl-border);
   border-radius: 4px;
   padding: 6px;
   margin: 4px 0 0;
@@ -121,8 +140,8 @@
   right: 0;
   top: 100%;
   margin-top: 4px;
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--cplace-lcl-surface);
+  border: 1px solid var(--cplace-lcl-border);
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   padding: 6px;
@@ -138,33 +157,33 @@
   font-size: 12px;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-row + .cplace-lcl-filter-row {
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--cplace-lcl-border-subtle);
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-field {
   font-weight: 600;
-  color: #6b7280;
+  color: var(--cplace-lcl-text-muted);
   min-width: 80px;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-value {
   flex: 1;
   font-family: ui-monospace, monospace;
   font-size: 11px;
-  color: #111827;
+  color: var(--cplace-lcl-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
 }
 #cplace-low-code-logs-stack a.cplace-lcl-filter-value {
-  color: #1a56db;
+  color: var(--cplace-lcl-link);
   text-decoration: none;
 }
 #cplace-low-code-logs-stack a.cplace-lcl-filter-value:hover {
   text-decoration: underline;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-action {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  background: var(--cplace-lcl-surface-alt);
+  border: 1px solid var(--cplace-lcl-border);
   border-radius: 4px;
   padding: 2px 4px;
   font-size: 14px;
@@ -174,15 +193,15 @@
   flex-shrink: 0;
 }
 #cplace-low-code-logs-stack .cplace-lcl-filter-action:hover {
-  background: #e5e7eb;
+  background: var(--cplace-lcl-border-subtle);
 }
 
 #cplace-low-code-logs-stack .cplace-lcl-overflow {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  background: #1a56db;
-  color: #fff;
+  background: var(--cplace-lcl-accent);
+  color: var(--cplace-lcl-on-accent);
   border: none;
   border-radius: 999px;
   cursor: pointer;
@@ -190,8 +209,8 @@
   align-self: flex-end;
 }
 #cplace-low-code-logs-stack .cplace-lcl-overflow-panel {
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--cplace-lcl-surface);
+  border: 1px solid var(--cplace-lcl-border);
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   max-height: 400px;
@@ -202,8 +221,8 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  background: #dc2626;
-  color: #fff;
+  background: var(--cplace-lcl-error);
+  color: var(--cplace-lcl-on-accent);
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
   white-space: nowrap;

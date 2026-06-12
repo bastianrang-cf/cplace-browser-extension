@@ -5,6 +5,23 @@
   z-index: 2147483647;
   font-family: system-ui, sans-serif;
   font-size: 13px;
+
+  /* Theme tokens — inherit the cplace instance's Look-and-Feel theme. Every theme.less
+     variable is exposed by cplace as a :root CSS custom property (@foo-bar -> --foo-bar),
+     so the overlay picks up the tenant's colors automatically. The fallbacks reproduce the
+     extension's own palette on instances (or older versions) that define no such tokens. */
+  --cplace-bj-accent:        var(--brand-primary-components, var(--brand-primary, #1a56db));
+  --cplace-bj-on-accent:     #fff;
+  --cplace-bj-link:          var(--link-color, var(--brand-primary, #1a56db));
+  --cplace-bj-surface:       var(--surface-0, #fff);
+  --cplace-bj-text:          var(--text-color, #111827);
+  --cplace-bj-text-muted:    var(--text-muted, #6b7280);
+  --cplace-bj-text-faint:    var(--text-muted, #9ca3af);
+  --cplace-bj-border:        var(--widget-border-color, #d1d5db);
+  --cplace-bj-border-subtle: var(--widget-border-color, #f3f4f6);
+  --cplace-bj-success:       var(--brand-success, #16a34a);
+  --cplace-bj-error:         var(--brand-danger, #dc2626);
+  --cplace-bj-info:          var(--brand-info, #2563eb);
 }
 #cplace-batch-jobs-panel .cplace-bj-badge,
 #cplace-batch-jobs-panel .cplace-bj-header {
@@ -21,16 +38,17 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: #1a56db;
-  color: #fff;
+  background: var(--cplace-bj-accent);
+  color: var(--cplace-bj-on-accent);
   border: none;
   border-radius: 6px;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
 #cplace-batch-jobs-panel .cplace-bj-expanded-panel {
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--cplace-bj-surface);
+  color: var(--cplace-bj-text);
+  border: 1px solid var(--cplace-bj-border);
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   min-width: 320px;
@@ -41,15 +59,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: #1a56db;
-  color: #fff;
+  background: var(--cplace-bj-accent);
+  color: var(--cplace-bj-on-accent);
 }
 #cplace-batch-jobs-panel .cplace-bj-header span,
 #cplace-batch-jobs-panel .cplace-bj-header a {
   font-weight: 600;
 }
 #cplace-batch-jobs-panel .cplace-bj-header a {
-  color: #fff;
+  color: var(--cplace-bj-on-accent);
   text-decoration: none;
 }
 #cplace-batch-jobs-panel .cplace-bj-header a:hover {
@@ -59,7 +77,7 @@
 #cplace-batch-jobs-panel .cplace-bj-reset {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--cplace-bj-on-accent);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -84,7 +102,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 8px 14px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--cplace-bj-border-subtle);
 }
 #cplace-batch-jobs-panel .cplace-bj-list li:last-child {
   border-bottom: none;
@@ -96,7 +114,7 @@
   flex-direction: column;
 }
 #cplace-batch-jobs-panel .cplace-bj-list a {
-  color: #1a56db;
+  color: var(--cplace-bj-link);
   text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -107,7 +125,7 @@
   text-decoration: underline;
 }
 #cplace-batch-jobs-panel .cplace-bj-workspace {
-  color: #9ca3af;
+  color: var(--cplace-bj-text-faint);
   font-size: 11px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,12 +139,12 @@
   margin-left: 8px;
 }
 #cplace-batch-jobs-panel .cplace-bj-started-at {
-  color: #6b7280;
+  color: var(--cplace-bj-text-muted);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
 }
 #cplace-batch-jobs-panel .cplace-bj-elapsed {
-  color: #6b7280;
+  color: var(--cplace-bj-text-muted);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
 }
@@ -138,18 +156,18 @@
   font-weight: 700;
   flex-shrink: 0;
 }
-#cplace-batch-jobs-panel .cplace-bj-status--success   { color: #16a34a; }
-#cplace-batch-jobs-panel .cplace-bj-status--error     { color: #dc2626; }
-#cplace-batch-jobs-panel .cplace-bj-status--running   { color: #2563eb; }
-#cplace-batch-jobs-panel .cplace-bj-status--cancelled { color: #6b7280; }
-#cplace-batch-jobs-panel .cplace-bj-status--skipped   { color: #9ca3af; }
-#cplace-batch-jobs-panel .cplace-bj-status--created   { color: #9ca3af; }
+#cplace-batch-jobs-panel .cplace-bj-status--success   { color: var(--cplace-bj-success); }
+#cplace-batch-jobs-panel .cplace-bj-status--error     { color: var(--cplace-bj-error); }
+#cplace-batch-jobs-panel .cplace-bj-status--running   { color: var(--cplace-bj-info); }
+#cplace-batch-jobs-panel .cplace-bj-status--cancelled { color: var(--cplace-bj-text-muted); }
+#cplace-batch-jobs-panel .cplace-bj-status--skipped   { color: var(--cplace-bj-text-faint); }
+#cplace-batch-jobs-panel .cplace-bj-status--created   { color: var(--cplace-bj-text-faint); }
 #cplace-batch-jobs-panel .cplace-bj-error {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  background: #dc2626;
-  color: #fff;
+  background: var(--cplace-bj-error);
+  color: var(--cplace-bj-on-accent);
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
   white-space: nowrap;
