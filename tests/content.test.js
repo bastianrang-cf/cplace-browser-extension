@@ -383,6 +383,38 @@ describe('content — keyboard shortcuts', () => {
     const snooze = await fakeBrowser.storage.local.get('moduleSnooze');
     expect(snooze.moduleSnooze?.[baseUrl]).toBeUndefined();
   });
+
+  it('opens a nav-link in a new tab via its configured shortcut when active', async () => {
+    setCplacePresent();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'nav-links': true },
+      moduleShortcuts: { 'nav-links': { '/batchJob/jobs': { mod: true, code: 'KeyB' } } },
+    });
+    await loadContent();
+    await detectVersion();
+
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    pressCtrl('KeyB');
+
+    expect(openSpy).toHaveBeenCalledWith(`${baseUrl}/batchJob/jobs`, '_blank', 'noopener,noreferrer');
+    openSpy.mockRestore();
+  });
+
+  it('does not fire a nav-link shortcut when the module is disabled', async () => {
+    setCplacePresent();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'nav-links': false },
+      moduleShortcuts: { 'nav-links': { '/batchJob/jobs': { mod: true, code: 'KeyB' } } },
+    });
+    await loadContent();
+    await detectVersion();
+
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+    pressCtrl('KeyB');
+
+    expect(openSpy).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
 });
 
 describe('content — version detection', () => {

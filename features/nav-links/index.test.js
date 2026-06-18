@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import mod from './index.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { fakeBrowser } from 'wxt/testing';
+import mod, { navLinks, isValidNavPath, sanitizeCustomLinks, resolveLinks } from './index.js';
 
 describe('nav-links module', () => {
   it('has correct id', () => {
@@ -94,71 +95,209 @@ describe('nav-links module', () => {
   });
 });
 
-describe('nav-links options', () => {
-  it('defaults disabledPaths to an empty array', () => {
-    expect(mod.defaultOptions).toEqual({ disabledPaths: [] });
+describe('nav-links isValidNavPath', () => {
+  it('accepts a relative path beginning with a single /', () => {
+    expect(isValidNavPath('/batchJob/jobs')).toBe(true);
+    expect(isValidNavPath('  /space/allSpaces  ')).toBe(true);
+  });
+
+  it('rejects non-relative, protocol-relative and absolute URLs', () => {
+    expect(isValidNavPath('batchJob/jobs')).toBe(false);
+    expect(isValidNavPath('//evil.com/x')).toBe(false);
+    expect(isValidNavPath('https://evil.com')).toBe(false);
+    expect(isValidNavPath('/path/with/\\backslash')).toBe(false);
+    expect(isValidNavPath('')).toBe(false);
+    expect(isValidNavPath(null)).toBe(false);
+    expect(isValidNavPath(42)).toBe(false);
+  });
+});
+
+describe('nav-links sanitizeCustomLinks', () => {
+  it('trims, validates, and falls back label to path', () => {
+    const out = sanitizeCustomLinks([
+      { label: '  My Page  ', path: '  /my/page  ' },
+      { label: '', path: '/no/label' },
+    ]);
+    expect(out).toEqual([
+      { label: 'My Page', path: '/my/page' },
+      { label: '/no/label', path: '/no/label' },
+    ]);
+  });
+
+  it('drops invalid paths and dedupes against built-ins and itself', () => {
+    const out = sanitizeCustomLinks([
+      { label: 'Bad', path: 'no-slash' },
+      { label: 'Dup of builtin', path: '/batchJob/jobs' },
+      { label: 'Custom', path: '/custom' },
+      { label: 'Custom again', path: '/custom' },
+    ]);
+    expect(out).toEqual([{ label: 'Custom', path: '/custom' }]);
+  });
+
+  it('returns an empty array for non-array input', () => {
+    expect(sanitizeCustomLinks(undefined)).toEqual([]);
+    expect(sanitizeCustomLinks(null)).toEqual([]);
+  });
+});
+
+describe('nav-links resolveLinks', () => {
+  it('returns all built-ins when nothing is disabled or customized', () => {
+    expect(resolveLinks({})).toHaveLength(navLinks.length);
+  });
+
+  it('filters out disabled paths and appends custom links', () => {
+    const links = resolveLinks({
+      disabledPaths: ['/space/allSpaces'],
+      customLinks: [{ label: 'Custom', path: '/custom' }],
+    });
+    const paths = links.map((l) => l.path);
+    expect(paths).not.toContain('/space/allSpaces');
+    expect(paths).toContain('/custom');
+    expect(links).toHaveLength(navLinks.length); // -1 disabled +1 custom
+  });
+
+  it('ignores invalid custom links', () => {
+    const links = resolveLinks({ customLinks: [{ label: 'Evil', path: '//evil.com' }] });
+    expect(links).toHaveLength(navLinks.length);
+  });
+});
+
+describe('nav-links onAction', () => {
+  let openSpy;
+  beforeEach(() => {
+    openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+  });
+  afterEach(() => {
+    openSpy.mockRestore();
+  });
+
+  it('opens baseUrl + path in a new tab for a valid path', () => {
+    mod.onAction('/batchJob/jobs', { baseUrl: 'https://demo.cplace.cloud/tenant' });
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://demo.cplace.cloud/tenant/batchJob/jobs',
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('does nothing without a baseUrl', () => {
+    mod.onAction('/batchJob/jobs', {});
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it('does nothing for an invalid (off-origin) path', () => {
+    mod.onAction('//evil.com', { baseUrl: 'https://demo.cplace.cloud' });
+    expect(openSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('nav-links options editor', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+  });
+
+  it('defaults disabledPaths and customLinks to empty arrays', () => {
+    expect(mod.defaultOptions).toEqual({ disabledPaths: [], customLinks: [] });
   });
 
   it('exposes a renderOptions function', () => {
     expect(typeof mod.renderOptions).toBe('function');
   });
 
-  it('renders one checkbox per nav link, all checked when disabledPaths is empty', () => {
+  function makeCtx(options) {
+    let current = options;
+    const setOptions = vi.fn((next) => { current = next; });
+    return { ctx: { getOptions: () => current, setOptions, getDefaults: () => mod.defaultOptions }, setOptions };
+  }
+
+  it('renders one toggle checkbox per built-in link, all checked when nothing is disabled', () => {
     const container = document.createElement('div');
-    mod.renderOptions(container, {
-      getOptions: () => ({ disabledPaths: [] }),
-      setOptions: () => {},
-      getDefaults: () => ({ disabledPaths: [] }),
-    });
-    const boxes = container.querySelectorAll('input[type="checkbox"]');
-    expect(boxes).toHaveLength(mod.navLinks.length);
+    const { ctx } = makeCtx({ disabledPaths: [], customLinks: [] });
+    mod.renderOptions(container, ctx);
+    const rows = container.querySelectorAll('.nav-links-row:not(.nav-links-row--custom)');
+    expect(rows).toHaveLength(navLinks.length);
+    const boxes = container.querySelectorAll('.nav-links-toggle');
+    expect(boxes).toHaveLength(navLinks.length);
     for (const cb of boxes) expect(cb.checked).toBe(true);
   });
 
-  it('renders checkboxes unchecked for paths in disabledPaths', () => {
+  it('renders the toggle unchecked for a disabled path', () => {
     const container = document.createElement('div');
-    mod.renderOptions(container, {
-      getOptions: () => ({ disabledPaths: ['/space/allSpaces', '/draft/myDrafts'] }),
-      setOptions: () => {},
-      getDefaults: () => ({ disabledPaths: [] }),
-    });
-    const rows = container.querySelectorAll('.nav-links-row');
-    const states = {};
-    rows.forEach((row, i) => {
-      states[mod.navLinks[i].path] = row.querySelector('input[type="checkbox"]').checked;
-    });
-    expect(states['/space/allSpaces']).toBe(false);
-    expect(states['/draft/myDrafts']).toBe(false);
-    expect(states['/batchJob/jobs']).toBe(true);
+    const { ctx } = makeCtx({ disabledPaths: ['/space/allSpaces'], customLinks: [] });
+    mod.renderOptions(container, ctx);
+    const firstToggle = container.querySelector('.nav-links-row .nav-links-toggle');
+    expect(firstToggle.checked).toBe(false); // /space/allSpaces is the first built-in
   });
 
-  it('calls setOptions with the path added to disabledPaths when a box is unchecked', () => {
+  it('persists disabledPaths (preserving customLinks) when a toggle is unchecked', () => {
     const container = document.createElement('div');
-    const setOptions = vi.fn();
-    mod.renderOptions(container, {
-      getOptions: () => ({ disabledPaths: [] }),
-      setOptions,
-      getDefaults: () => ({ disabledPaths: [] }),
+    const { ctx, setOptions } = makeCtx({ disabledPaths: [], customLinks: [] });
+    mod.renderOptions(container, ctx);
+    const firstToggle = container.querySelector('.nav-links-toggle');
+    firstToggle.checked = false;
+    firstToggle.dispatchEvent(new Event('change'));
+    expect(setOptions).toHaveBeenCalledWith({
+      disabledPaths: [navLinks[0].path],
+      customLinks: [],
     });
-    const firstBox = container.querySelectorAll('input[type="checkbox"]')[0];
-    firstBox.checked = false;
-    firstBox.dispatchEvent(new Event('change'));
-    expect(setOptions).toHaveBeenCalledWith({ disabledPaths: [mod.navLinks[0].path] });
   });
 
-  it('calls setOptions with the path removed when a previously-disabled box is re-checked', () => {
+  it('adds a valid custom link via the add form', () => {
     const container = document.createElement('div');
-    const setOptions = vi.fn();
-    const path = mod.navLinks[0].path;
-    mod.renderOptions(container, {
-      getOptions: () => ({ disabledPaths: [path] }),
-      setOptions,
-      getDefaults: () => ({ disabledPaths: [] }),
+    const { ctx, setOptions } = makeCtx({ disabledPaths: [], customLinks: [] });
+    mod.renderOptions(container, ctx);
+    container.querySelector('.nav-links-add-label').value = 'My Page';
+    container.querySelector('.nav-links-add-path').value = '/my/page';
+    container.querySelector('.nav-links-add-btn').dispatchEvent(new Event('click'));
+    expect(setOptions).toHaveBeenCalledWith({
+      disabledPaths: [],
+      customLinks: [{ label: 'My Page', path: '/my/page' }],
     });
-    const firstBox = container.querySelectorAll('input[type="checkbox"]')[0];
-    expect(firstBox.checked).toBe(false);
-    firstBox.checked = true;
-    firstBox.dispatchEvent(new Event('change'));
-    expect(setOptions).toHaveBeenCalledWith({ disabledPaths: [] });
+    // The new custom row is rendered.
+    expect(container.querySelectorAll('.nav-links-row--custom')).toHaveLength(1);
+  });
+
+  it('rejects an invalid custom path with feedback and does not persist', () => {
+    const container = document.createElement('div');
+    const { ctx, setOptions } = makeCtx({ disabledPaths: [], customLinks: [] });
+    mod.renderOptions(container, ctx);
+    container.querySelector('.nav-links-add-path').value = 'not-a-path';
+    container.querySelector('.nav-links-add-btn').dispatchEvent(new Event('click'));
+    expect(setOptions).not.toHaveBeenCalled();
+    const error = container.querySelector('.nav-links-add .nav-links-error');
+    expect(error.hidden).toBe(false);
+  });
+
+  it('rejects a duplicate custom path', () => {
+    const container = document.createElement('div');
+    const { ctx, setOptions } = makeCtx({ disabledPaths: [], customLinks: [] });
+    mod.renderOptions(container, ctx);
+    container.querySelector('.nav-links-add-path').value = '/batchJob/jobs'; // dup of built-in
+    container.querySelector('.nav-links-add-btn').dispatchEvent(new Event('click'));
+    expect(setOptions).not.toHaveBeenCalled();
+  });
+
+  it('removes a custom link', () => {
+    const container = document.createElement('div');
+    const { ctx, setOptions } = makeCtx({
+      disabledPaths: [],
+      customLinks: [{ label: 'Custom', path: '/custom' }],
+    });
+    mod.renderOptions(container, ctx);
+    expect(container.querySelectorAll('.nav-links-row--custom')).toHaveLength(1);
+    container.querySelector('.nav-links-remove').dispatchEvent(new Event('click'));
+    expect(setOptions).toHaveBeenCalledWith({ disabledPaths: [], customLinks: [] });
+  });
+
+  it('reflects a stored shortcut on the matching link recorder once loaded', async () => {
+    await fakeBrowser.storage.local.set({
+      moduleShortcuts: { 'nav-links': { '/batchJob/jobs': { mod: true, code: 'KeyB' } } },
+    });
+    const container = document.createElement('div');
+    const { ctx } = makeCtx({ disabledPaths: [], customLinks: [] });
+    mod.renderOptions(container, ctx);
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    const setRecorders = [...container.querySelectorAll('.module-shortcut__recorder.is-set')];
+    expect(setRecorders).toHaveLength(1);
   });
 });
