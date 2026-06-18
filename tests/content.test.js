@@ -263,6 +263,128 @@ describe('content — cplace:moduleAction listener', () => {
   });
 });
 
+describe('content — keyboard shortcuts', () => {
+  const baseUrl = location.origin;
+
+  async function detectVersion() {
+    document.dispatchEvent(
+      new CustomEvent('cplace:versionDetected', { detail: { version: '25.4' } }),
+    );
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+  }
+
+  // jsdom reports a non-mac platform, so the content script resolves the
+  // primary modifier to ctrlKey. These tests press Ctrl accordingly.
+  function pressCtrl(code, extra = {}) {
+    document.dispatchEvent(new KeyboardEvent('keydown', { code, ctrlKey: true, bubbles: true, ...extra }));
+  }
+
+  it('fires an action via its configured shortcut when the module is active', async () => {
+    setCplacePresent();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'language-switcher': true },
+      moduleShortcuts: { 'language-switcher': { 'switch-language': { mod: true, code: 'KeyY' } } },
+    });
+    await loadContent();
+
+    const spy = vi.spyOn(document, 'dispatchEvent');
+    pressCtrl('KeyY');
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:doSwitchLanguage' }),
+    );
+  });
+
+  it('does not fire an action shortcut when the module is not active', async () => {
+    setCplacePresent();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'language-switcher': false },
+      moduleShortcuts: { 'language-switcher': { 'switch-language': { mod: true, code: 'KeyY' } } },
+    });
+    await loadContent();
+
+    const spy = vi.spyOn(document, 'dispatchEvent');
+    pressCtrl('KeyY');
+
+    expect(spy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:doSwitchLanguage' }),
+    );
+  });
+
+  it('does not fire when a different (non-matching) combo is pressed', async () => {
+    setCplacePresent();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'language-switcher': true },
+      moduleShortcuts: { 'language-switcher': { 'switch-language': { mod: true, code: 'KeyY' } } },
+    });
+    await loadContent();
+
+    const spy = vi.spyOn(document, 'dispatchEvent');
+    pressCtrl('KeyZ');
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyY' })); // no modifier
+
+    expect(spy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cplace:doSwitchLanguage' }),
+    );
+  });
+
+  it('snooze shortcut snoozes an active snoozable module on the tenant', async () => {
+    setCplacePresent();
+    vi.useFakeTimers();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': true },
+      moduleShortcuts: { 'batch-jobs': { snooze: { mod: true, code: 'KeyB' } } },
+    });
+    await loadContent();
+    await detectVersion();
+    expect(document.getElementById('cplace-batch-jobs-link')).not.toBeNull();
+
+    pressCtrl('KeyB');
+    vi.useRealTimers();
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    const snooze = await fakeBrowser.storage.local.get('moduleSnooze');
+    expect(snooze.moduleSnooze?.[baseUrl]?.['batch-jobs']?.until).toBeGreaterThan(Date.now());
+    expect(document.getElementById('cplace-batch-jobs-link')).toBeNull();
+  });
+
+  it('snooze shortcut un-snoozes an already-snoozed module', async () => {
+    setCplacePresent();
+    vi.useFakeTimers();
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': true },
+      moduleSnooze: { [baseUrl]: { 'batch-jobs': { until: Date.now() + 60_000 } } },
+      moduleShortcuts: { 'batch-jobs': { snooze: { mod: true, code: 'KeyB' } } },
+    });
+    await loadContent();
+    await detectVersion();
+    expect(document.getElementById('cplace-batch-jobs-link')).toBeNull();
+
+    pressCtrl('KeyB');
+    vi.useRealTimers();
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    const snooze = await fakeBrowser.storage.local.get('moduleSnooze');
+    expect(snooze.moduleSnooze?.[baseUrl]?.['batch-jobs']).toBeUndefined();
+    expect(document.getElementById('cplace-batch-jobs-link')).not.toBeNull();
+  });
+
+  it('does not fire a snooze shortcut when #cplace is absent', async () => {
+    await fakeBrowser.storage.local.set({
+      enabledModules: { 'batch-jobs': true },
+      moduleShortcuts: { 'batch-jobs': { snooze: { mod: true, code: 'KeyB' } } },
+    });
+    await loadContent();
+    await detectVersion();
+
+    pressCtrl('KeyB');
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+
+    const snooze = await fakeBrowser.storage.local.get('moduleSnooze');
+    expect(snooze.moduleSnooze?.[baseUrl]).toBeUndefined();
+  });
+});
+
 describe('content — version detection', () => {
   it('injects detect-version-page.js when #cplace is present at load', async () => {
     setCplacePresent();
