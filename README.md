@@ -46,6 +46,28 @@ open tab/window** showing that tenant, so you only have to set it once.
 
 ---
 
+## Keyboard shortcuts
+
+Each module can be given an optional **keyboard shortcut** on the **Options** page, so
+you can trigger it directly on a cplace page without opening the popup:
+
+- **Modules with a popup action** (Language Switcher, System Information) bind the
+  shortcut to that action — pressing it does exactly what clicking the popup button does.
+- **Snoozable modules** (Batch Jobs overlay, Low-Code Logs toasts, Domain CSS injection)
+  bind the shortcut to **snooze / un-snooze** for the current tenant.
+
+Shortcuts are **off by default**. Click **Set shortcut**, then press the combination you
+want. Shortcuts are stored in a platform-independent form using a logical primary
+modifier that resolves to **⌘ on macOS** and **Ctrl on Windows/Linux**, so a single
+binding works on both — and the Options UI renders the matching glyphs for your platform.
+At least one modifier (⌘/Ctrl or ⌥/Alt) is required, and the editor warns when a combo
+collides with a known browser/OS shortcut, a common rich-text editor shortcut, or is
+already bound to another command. Shortcuts fire only on cplace pages: **action**
+shortcuts while the owning module is active, and **snooze** shortcuts on any cplace page
+for the tenant — including while the module is snoozed, which is how you un-snooze it.
+
+---
+
 ## First-run setup: page access
 
 The extension asks for page access **on demand** rather than at install time. After installing, the options page opens automatically with an **Enable on all pages** button — click it once and confirm Chrome's prompt to let the extension detect cplace on the sites you visit. Until you do, the toolbar icon stays inactive and the modules cannot run. You can revoke access at any time from the same options panel.

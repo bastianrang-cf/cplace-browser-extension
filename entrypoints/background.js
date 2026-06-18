@@ -1,6 +1,6 @@
 import { defineBackground } from '#imports';
 import { registry } from '../features/registry.js';
-import { enabledModulesItem, moduleOptionsItem, domainCssByTabItem, tabBaseUrlItem } from '../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, moduleShortcutsItem, domainCssByTabItem, tabBaseUrlItem } from '../features/storage.js';
 import { hasUniversalHostAccess } from '../features/permissions.js';
 
 const CONTENT_SCRIPT_ID = 'cplace-content';
@@ -86,8 +86,21 @@ export default defineBackground(() => {
       }
     }
 
+    // Drop keyboard shortcuts bound to modules that no longer exist (e.g. a
+    // module id was renamed or removed in an update), so stored bindings can't
+    // accumulate indefinitely.
+    const currentShortcuts = await moduleShortcutsItem.getValue();
+    let shortcutsChanged = false;
+    for (const id of Object.keys(currentShortcuts)) {
+      if (!registry.byId(id)) {
+        delete currentShortcuts[id];
+        shortcutsChanged = true;
+      }
+    }
+
     if (enabledChanged) await enabledModulesItem.setValue(currentEnabled);
     if (optionsChanged) await moduleOptionsItem.setValue(currentOptions);
+    if (shortcutsChanged) await moduleShortcutsItem.setValue(currentShortcuts);
 
     if (details.reason === 'install') {
       const granted = await hasUniversalHostAccess();

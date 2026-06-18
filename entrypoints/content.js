@@ -1,9 +1,10 @@
 import { defineContentScript, injectScript } from '#imports';
 import { registry } from '../features/registry.js';
 import { injectModuleCSS, removeModuleCSS, injectPageScript, removePageScript } from '../features/utils.js';
-import { enabledModulesItem, moduleOptionsItem, moduleSnoozeItem } from '../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, moduleSnoozeItem, moduleShortcutsItem } from '../features/storage.js';
 import { deriveBaseUrl } from '../features/base-url.js';
-import { pruneSnooze, snoozeState } from '../features/snooze.js';
+import { pruneSnooze, snoozeState, snoozeEntryFor } from '../features/snooze.js';
+import { detectPlatform, matchesCombo, SNOOZE_COMMAND_ID } from '../features/shortcuts.js';
 
 export default defineContentScript({
   registration: 'runtime',
@@ -15,7 +16,9 @@ export default defineContentScript({
     let moduleOptions = {};
     let desiredEnabled = {};
     let moduleSnooze = {};
+    let moduleShortcuts = {};
     let snoozeTimer = null;
+    const platform = detectPlatform();
 
     function getEnabledMap(stored) {
       const defaults = registry.defaultEnabledMap();
@@ -50,6 +53,28 @@ export default defineContentScript({
           scheduleSnoozeExpiry();
         }, earliest - now);
       }
+    }
+
+    // Toggle a snoozable module between active (off) and snoozed for the current
+    // tenant. Mirrors the popup's snooze write so behaviour is identical; the
+    // local setValue triggers this tab's own watch (idempotent reconcile) and the
+    // runtime message fans out to sibling tabs of the same tenant.
+    function toggleSnooze(moduleId) {
+      const baseUrl = lastContext?.baseUrl;
+      if (!baseUrl) return;
+      const current = snoozeState(moduleSnooze[baseUrl]?.[moduleId]);
+      const entry = snoozeEntryFor(current === 'off' ? 'snooze' : 'off');
+      const map = pruneSnooze(moduleSnooze);
+      const mods = { ...(map[baseUrl] || {}) };
+      if (entry) mods[moduleId] = entry;
+      else delete mods[moduleId];
+      if (Object.keys(mods).length) map[baseUrl] = mods;
+      else delete map[baseUrl];
+      moduleSnooze = map;
+      moduleSnoozeItem.setValue(map).catch(() => {});
+      browser.runtime.sendMessage({ type: 'cplace:moduleSnooze' }).catch(() => {});
+      reconcile();
+      scheduleSnoozeExpiry();
     }
 
     function notifyContextDetected(mod) {
@@ -167,11 +192,70 @@ export default defineContentScript({
       enabledModulesItem.getValue(),
       moduleOptionsItem.getValue(),
       moduleSnoozeItem.getValue(),
-    ]).then(([enabled, options, snooze]) => {
+      moduleShortcutsItem.getValue(),
+    ]).then(([enabled, options, snooze, shortcuts]) => {
       moduleOptions = options;
       moduleSnooze = pruneSnooze(snooze || {});
+      moduleShortcuts = shortcuts || {};
       applyAll(enabled);
       scheduleSnoozeExpiry();
+    });
+
+    // --- Keyboard shortcuts ---
+    //
+    // A single in-page keydown listener dispatches the same paths the popup uses.
+    // Snooze commands gate on "enabled + #cplace present" (NOT on the module being
+    // active) so a snoozed module can still be un-snoozed by keyboard. Action
+    // commands keep the strict "module active" gate.
+    function isEditableTarget(el) {
+      if (!el || typeof el !== 'object') return false;
+      const tag = el.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+      return !!el.isContentEditable;
+    }
+
+    function handleShortcutKeydown(event) {
+      for (const [moduleId, cmds] of Object.entries(moduleShortcuts)) {
+        const mod = registry.byId(moduleId);
+        if (!mod) continue;
+        for (const [commandId, combo] of Object.entries(cmds || {})) {
+          if (!combo || !matchesCombo(event, combo, platform)) continue;
+          // Modifier-bearing combos are unambiguous even mid-typing; bare combos are not.
+          if (isEditableTarget(event.target) && !combo.mod && !combo.alt) continue;
+
+          if (mod.snoozable && commandId === SNOOZE_COMMAND_ID) {
+            if (desiredEnabled[moduleId] && lastFound === true && lastContext?.baseUrl) {
+              event.preventDefault();
+              event.stopPropagation();
+              toggleSnooze(moduleId);
+              return;
+            }
+            continue;
+          }
+
+          if (activeModules.has(moduleId) && typeof mod.onAction === 'function') {
+            event.preventDefault();
+            event.stopPropagation();
+            try {
+              mod.onAction(commandId, lastContext);
+            } catch (e) {
+              console.warn('[cplace] shortcut action failed:', moduleId, commandId, e);
+            }
+            return;
+          }
+        }
+      }
+    }
+    // Deduplicate registration so a re-injected content script (or a fresh
+    // main() in tests) never leaves a stale listener bound to old state.
+    if (window.__cplaceShortcutKeydown) {
+      document.removeEventListener('keydown', window.__cplaceShortcutKeydown, true);
+    }
+    window.__cplaceShortcutKeydown = handleShortcutKeydown;
+    document.addEventListener('keydown', handleShortcutKeydown, true);
+
+    moduleShortcutsItem.watch((newValue) => {
+      moduleShortcuts = newValue || {};
     });
 
     browser.runtime.onMessage.addListener((msg) => {

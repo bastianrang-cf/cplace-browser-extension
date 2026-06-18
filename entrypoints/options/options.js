@@ -1,13 +1,25 @@
 import { registry } from '../../features/registry.js';
-import { enabledModulesItem, moduleOptionsItem } from '../../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, moduleShortcutsItem } from '../../features/storage.js';
 import {
   hasUniversalHostAccess,
   requestUniversalHostAccess,
   revokeUniversalHostAccess,
 } from '../../features/permissions.js';
+import {
+  bindableCommands,
+  comboToDisplay,
+  eventToCombo,
+  isValidCombo,
+  combosEqual,
+  reservedConflict,
+  editorComboWarning,
+  detectPlatform,
+} from '../../features/shortcuts.js';
 
 let liveOpts = {};
+let liveShortcuts = {};
 let activeSectionId = null;
+const platform = detectPlatform();
 
 const sidebar = document.getElementById('sidebar');
 const content = document.getElementById('content');
@@ -182,6 +194,176 @@ async function refreshHostAccess() {
   content.setAttribute('aria-disabled', granted ? 'false' : 'true');
 }
 
+// Resolve a "module — command" label for a binding, used in duplicate warnings.
+function labelForBinding(moduleId, commandId) {
+  const mod = registry.byId(moduleId);
+  const cmd = bindableCommands(mod).find((c) => c.id === commandId);
+  return `${mod?.name || moduleId} — ${cmd?.label || commandId}`;
+}
+
+// Scan every stored binding for one that collides with `combo` (excluding the
+// command being edited). Returns { moduleId, commandId } or null.
+function findDuplicateBinding(moduleId, commandId, combo) {
+  for (const [mId, cmds] of Object.entries(liveShortcuts)) {
+    for (const [cId, c] of Object.entries(cmds || {})) {
+      if (mId === moduleId && cId === commandId) continue;
+      if (combosEqual(c, combo)) return { moduleId: mId, commandId: cId };
+    }
+  }
+  return null;
+}
+
+async function saveShortcut(moduleId, commandId, combo) {
+  const all = (await moduleShortcutsItem.getValue()) || {};
+  const cmds = { ...(all[moduleId] || {}) };
+  if (combo) cmds[commandId] = combo;
+  else delete cmds[commandId];
+  if (Object.keys(cmds).length) all[moduleId] = cmds;
+  else delete all[moduleId];
+  await moduleShortcutsItem.setValue(all);
+  liveShortcuts = all;
+}
+
+function buildShortcutRow(moduleId, cmd) {
+  const row = document.createElement('div');
+  row.className = 'module-shortcut-row';
+
+  const label = document.createElement('span');
+  label.className = 'module-shortcut__label';
+  label.textContent = cmd.label;
+  row.appendChild(label);
+
+  const controls = document.createElement('div');
+  controls.className = 'module-shortcut__controls';
+
+  const recorder = document.createElement('button');
+  recorder.type = 'button';
+  recorder.className = 'module-shortcut__recorder';
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'module-shortcut__clear';
+  clearBtn.textContent = 'Clear';
+
+  const warning = document.createElement('p');
+  warning.className = 'module-shortcut__warning';
+  warning.hidden = true;
+
+  function showWarning(text) {
+    if (text) {
+      warning.textContent = text;
+      warning.hidden = false;
+    } else {
+      warning.textContent = '';
+      warning.hidden = true;
+    }
+  }
+
+  function refresh() {
+    const combo = liveShortcuts[moduleId]?.[cmd.id] || null;
+    if (combo) {
+      recorder.textContent = comboToDisplay(combo, platform);
+      recorder.classList.add('is-set');
+      clearBtn.hidden = false;
+      const dup = findDuplicateBinding(moduleId, cmd.id, combo);
+      if (dup) {
+        showWarning(`Also bound to ${labelForBinding(dup.moduleId, dup.commandId)}.`);
+      } else {
+        showWarning(reservedConflict(combo, platform) || editorComboWarning(combo, platform));
+      }
+    } else {
+      recorder.textContent = 'Set shortcut';
+      recorder.classList.remove('is-set');
+      clearBtn.hidden = true;
+      showWarning(null);
+    }
+  }
+
+  let recording = false;
+  let onKey = null;
+
+  function stopRecording() {
+    recording = false;
+    recorder.classList.remove('is-recording');
+    if (onKey) {
+      document.removeEventListener('keydown', onKey, true);
+      onKey = null;
+    }
+    refresh();
+  }
+
+  function startRecording() {
+    if (recording) return;
+    recording = true;
+    recorder.classList.add('is-recording');
+    recorder.textContent = 'Press keys…';
+    clearBtn.hidden = true;
+    showWarning(null);
+    onKey = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.code === 'Escape') {
+        stopRecording();
+        return;
+      }
+      const combo = eventToCombo(event, platform);
+      if (!combo) return; // standalone modifier — keep waiting
+      if (!isValidCombo(combo)) {
+        recorder.textContent = comboToDisplay(combo, platform) || '…';
+        showWarning(platform === 'mac'
+          ? 'Add ⌘ or ⌥ — a modifier is required.'
+          : 'Add Ctrl or Alt — a modifier is required.');
+        return;
+      }
+      stopRecording();
+      saveShortcut(moduleId, cmd.id, combo).then(refresh);
+    };
+    document.addEventListener('keydown', onKey, true);
+  }
+
+  recorder.addEventListener('click', () => {
+    if (recording) stopRecording();
+    else startRecording();
+  });
+  recorder.addEventListener('blur', () => { if (recording) stopRecording(); });
+  clearBtn.addEventListener('click', () => {
+    saveShortcut(moduleId, cmd.id, null).then(refresh);
+  });
+
+  controls.appendChild(recorder);
+  controls.appendChild(clearBtn);
+  row.appendChild(controls);
+  row.appendChild(warning);
+  refresh();
+  return row;
+}
+
+function renderShortcutEditor(section, mod) {
+  const commands = bindableCommands(mod);
+  if (!commands.length) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'module-shortcuts';
+
+  const title = document.createElement('h3');
+  title.className = 'module-shortcuts__title';
+  title.textContent = 'Keyboard shortcuts';
+  wrap.appendChild(title);
+
+  const hint = document.createElement('p');
+  hint.className = 'module-shortcuts__hint';
+  hint.textContent = mod.snoozable
+    ? 'Snooze or un-snooze this module on the current cplace tenant. Fires only on cplace pages.'
+    : 'Trigger this action on a cplace page without opening the popup. Fires only while the module is active.';
+  wrap.appendChild(hint);
+
+  for (const cmd of commands) {
+    wrap.appendChild(buildShortcutRow(mod.id, cmd));
+  }
+
+  section.appendChild(wrap);
+}
+
 function renderModuleSection(mod, enabledMap, savedOpts) {
   const sectionId = `sec-mod-${mod.id}`;
   const { section, head } = makeSection(sectionId, mod.name, mod.description);
@@ -222,6 +404,8 @@ function renderModuleSection(mod, enabledMap, savedOpts) {
     }
     section.appendChild(optionsDiv);
   }
+
+  renderShortcutEditor(section, mod);
 
   return section;
 }
@@ -279,8 +463,13 @@ async function onOptionChange(moduleId, optId, type, input) {
 browser.permissions.onAdded.addListener(refreshHostAccess);
 browser.permissions.onRemoved.addListener(refreshHostAccess);
 
-Promise.all([enabledModulesItem.getValue(), moduleOptionsItem.getValue()]).then(
-  async ([stored, savedOpts]) => {
+Promise.all([
+  enabledModulesItem.getValue(),
+  moduleOptionsItem.getValue(),
+  moduleShortcutsItem.getValue(),
+]).then(
+  async ([stored, savedOpts, shortcuts]) => {
+    liveShortcuts = shortcuts || {};
     const defaults = registry.defaultEnabledMap();
     const enabled = { ...defaults, ...stored };
     render(enabled, savedOpts);
