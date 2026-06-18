@@ -357,6 +357,15 @@ function renderOptions(container, ctx) {
       refreshRecorders();
     })
     .catch(() => {});
+
+  // Keep the shared store as the single source of truth: a binding changed in
+  // the standard module editor (which writes the same moduleShortcutsItem)
+  // refreshes the per-link recorders so duplicate warnings stay accurate.
+  moduleShortcutsItem.watch((newValue) => {
+    allShortcuts = newValue || {};
+    shortcuts = allShortcuts[MODULE_ID] || {};
+    refreshRecorders();
+  });
 }
 
 export { navLinks };

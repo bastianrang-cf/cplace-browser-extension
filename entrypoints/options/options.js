@@ -10,6 +10,7 @@ import { createShortcutRecorder } from '../../features/shortcut-recorder.js';
 
 let liveOpts = {};
 let liveShortcuts = {};
+let shortcutRefreshers = [];
 let activeSectionId = null;
 const platform = detectPlatform();
 
@@ -228,7 +229,7 @@ function buildShortcutRow(moduleId, cmd) {
   const controls = document.createElement('div');
   controls.className = 'module-shortcut__controls';
 
-  const { recorder, clearBtn, warning } = createShortcutRecorder({
+  const { recorder, clearBtn, warning, refresh } = createShortcutRecorder({
     platform,
     getCombo: () => liveShortcuts[moduleId]?.[cmd.id] || null,
     onSave: (combo) => saveShortcut(moduleId, cmd.id, combo),
@@ -237,6 +238,7 @@ function buildShortcutRow(moduleId, cmd) {
       return dup ? `Also bound to ${labelForBinding(dup.moduleId, dup.commandId)}.` : null;
     },
   });
+  shortcutRefreshers.push(refresh);
 
   controls.appendChild(recorder);
   controls.appendChild(clearBtn);
@@ -319,6 +321,7 @@ function renderModuleSection(mod, enabledMap, savedOpts) {
 
 function render(enabledMap, savedOpts) {
   liveOpts = savedOpts;
+  shortcutRefreshers = [];
   sidebar.textContent = '';
   content.textContent = '';
 
@@ -369,6 +372,15 @@ async function onOptionChange(moduleId, optId, type, input) {
 
 browser.permissions.onAdded.addListener(refreshHostAccess);
 browser.permissions.onRemoved.addListener(refreshHostAccess);
+
+// Keep the shared shortcut store live as the single source of truth: a binding
+// changed elsewhere (e.g. the Navigation Links per-link editor, which writes the
+// same moduleShortcutsItem) refreshes every recorder so duplicate warnings stay
+// accurate without a page reload.
+moduleShortcutsItem.watch((newValue) => {
+  liveShortcuts = newValue || {};
+  for (const refresh of shortcutRefreshers) refresh();
+});
 
 Promise.all([
   enabledModulesItem.getValue(),

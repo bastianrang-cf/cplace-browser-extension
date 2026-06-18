@@ -289,6 +289,47 @@ describe('nav-links options editor', () => {
     expect(setOptions).toHaveBeenCalledWith({ disabledPaths: [], customLinks: [] });
   });
 
+  it('clears the stored shortcut when a custom link is removed', async () => {
+    await fakeBrowser.storage.local.set({
+      moduleShortcuts: { 'nav-links': { '/custom': { mod: true, code: 'KeyK' } } },
+    });
+    const container = document.createElement('div');
+    const { ctx } = makeCtx({
+      disabledPaths: [],
+      customLinks: [{ label: 'Custom', path: '/custom' }],
+    });
+    mod.renderOptions(container, ctx);
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    container.querySelector('.nav-links-remove').dispatchEvent(new Event('click'));
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    const stored = await fakeBrowser.storage.local.get('moduleShortcuts');
+    expect(stored.moduleShortcuts?.['nav-links']?.['/custom']).toBeUndefined();
+  });
+
+  it('re-keys the stored shortcut when a custom link path is edited', async () => {
+    await fakeBrowser.storage.local.set({
+      moduleShortcuts: { 'nav-links': { '/custom': { mod: true, code: 'KeyK' } } },
+    });
+    const container = document.createElement('div');
+    const { ctx } = makeCtx({
+      disabledPaths: [],
+      customLinks: [{ label: 'Custom', path: '/custom' }],
+    });
+    mod.renderOptions(container, ctx);
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    const pathInput = container.querySelector('.nav-links-path-input');
+    pathInput.value = '/renamed';
+    pathInput.dispatchEvent(new Event('change'));
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    const stored = await fakeBrowser.storage.local.get('moduleShortcuts');
+    expect(stored.moduleShortcuts?.['nav-links']?.['/custom']).toBeUndefined();
+    expect(stored.moduleShortcuts?.['nav-links']?.['/renamed']).toEqual({ mod: true, code: 'KeyK' });
+  });
+
   it('reflects a stored shortcut on the matching link recorder once loaded', async () => {
     await fakeBrowser.storage.local.set({
       moduleShortcuts: { 'nav-links': { '/batchJob/jobs': { mod: true, code: 'KeyB' } } },
