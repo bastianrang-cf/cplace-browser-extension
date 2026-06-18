@@ -80,7 +80,7 @@ describe('background — onInstalled', () => {
           pollIntervalSec: 15, maxToasts: 3, autoDismissMs: 8000,
           minLevel: 'info', stickyOnError: true,
         },
-        'nav-links': { disabledPaths: [] },
+        'nav-links': { disabledPaths: [], customLinks: [] },
       },
     });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');
@@ -105,6 +105,18 @@ describe('background — onInstalled', () => {
 
     const stored = await fakeBrowser.storage.local.get('moduleOptions');
     expect(stored.moduleOptions['batch-jobs'].limitJobs).toBe(5);
+  });
+
+  it('back-fills the new nav-links customLinks key for existing installs', async () => {
+    await fakeBrowser.storage.local.set({
+      moduleOptions: { 'nav-links': { disabledPaths: ['/draft/myDrafts'] } },
+    });
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    const stored = await fakeBrowser.storage.local.get('moduleOptions');
+    expect(stored.moduleOptions['nav-links'].disabledPaths).toEqual(['/draft/myDrafts']);
+    expect(stored.moduleOptions['nav-links'].customLinks).toEqual([]);
   });
 });
 

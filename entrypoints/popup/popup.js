@@ -212,9 +212,11 @@ async function init() {
         });
       }
     }
-    if (mod.navLinks?.length) {
-      const disabled = new Set(optsMap?.[mod.id]?.disabledPaths || []);
-      const visible = mod.navLinks.filter((l) => !disabled.has(l.path));
+    if (mod.navLinks?.length || typeof mod.resolveLinks === 'function') {
+      const opts = optsMap?.[mod.id] || {};
+      const visible = typeof mod.resolveLinks === 'function'
+        ? mod.resolveLinks(opts)
+        : mod.navLinks.filter((l) => !new Set(opts.disabledPaths || []).has(l.path));
       if (visible.length) navLinksMods.push({ mod, links: visible });
     }
   }

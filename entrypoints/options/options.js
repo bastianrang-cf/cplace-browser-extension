@@ -5,19 +5,12 @@ import {
   requestUniversalHostAccess,
   revokeUniversalHostAccess,
 } from '../../features/permissions.js';
-import {
-  bindableCommands,
-  comboToDisplay,
-  eventToCombo,
-  isValidCombo,
-  combosEqual,
-  reservedConflict,
-  editorComboWarning,
-  detectPlatform,
-} from '../../features/shortcuts.js';
+import { bindableCommands, combosEqual, detectPlatform } from '../../features/shortcuts.js';
+import { createShortcutRecorder } from '../../features/shortcut-recorder.js';
 
 let liveOpts = {};
 let liveShortcuts = {};
+let shortcutRefreshers = [];
 let activeSectionId = null;
 const platform = detectPlatform();
 
@@ -236,105 +229,21 @@ function buildShortcutRow(moduleId, cmd) {
   const controls = document.createElement('div');
   controls.className = 'module-shortcut__controls';
 
-  const recorder = document.createElement('button');
-  recorder.type = 'button';
-  recorder.className = 'module-shortcut__recorder';
-
-  const clearBtn = document.createElement('button');
-  clearBtn.type = 'button';
-  clearBtn.className = 'module-shortcut__clear';
-  clearBtn.textContent = 'Clear';
-
-  const warning = document.createElement('p');
-  warning.className = 'module-shortcut__warning';
-  warning.hidden = true;
-
-  function showWarning(text) {
-    if (text) {
-      warning.textContent = text;
-      warning.hidden = false;
-    } else {
-      warning.textContent = '';
-      warning.hidden = true;
-    }
-  }
-
-  function refresh() {
-    const combo = liveShortcuts[moduleId]?.[cmd.id] || null;
-    if (combo) {
-      recorder.textContent = comboToDisplay(combo, platform);
-      recorder.classList.add('is-set');
-      clearBtn.hidden = false;
+  const { recorder, clearBtn, warning, refresh } = createShortcutRecorder({
+    platform,
+    getCombo: () => liveShortcuts[moduleId]?.[cmd.id] || null,
+    onSave: (combo) => saveShortcut(moduleId, cmd.id, combo),
+    findConflict: (combo) => {
       const dup = findDuplicateBinding(moduleId, cmd.id, combo);
-      if (dup) {
-        showWarning(`Also bound to ${labelForBinding(dup.moduleId, dup.commandId)}.`);
-      } else {
-        showWarning(reservedConflict(combo, platform) || editorComboWarning(combo, platform));
-      }
-    } else {
-      recorder.textContent = 'Set shortcut';
-      recorder.classList.remove('is-set');
-      clearBtn.hidden = true;
-      showWarning(null);
-    }
-  }
-
-  let recording = false;
-  let onKey = null;
-
-  function stopRecording() {
-    recording = false;
-    recorder.classList.remove('is-recording');
-    if (onKey) {
-      document.removeEventListener('keydown', onKey, true);
-      onKey = null;
-    }
-    refresh();
-  }
-
-  function startRecording() {
-    if (recording) return;
-    recording = true;
-    recorder.classList.add('is-recording');
-    recorder.textContent = 'Press keys…';
-    clearBtn.hidden = true;
-    showWarning(null);
-    onKey = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (event.code === 'Escape') {
-        stopRecording();
-        return;
-      }
-      const combo = eventToCombo(event, platform);
-      if (!combo) return; // standalone modifier — keep waiting
-      if (!isValidCombo(combo)) {
-        recorder.textContent = comboToDisplay(combo, platform) || '…';
-        showWarning(platform === 'mac'
-          ? 'Add ⌘ or ⌥ — a modifier is required.'
-          : 'Add Ctrl or Alt — a modifier is required.');
-        return;
-      }
-      stopRecording();
-      saveShortcut(moduleId, cmd.id, combo).then(refresh);
-    };
-    document.addEventListener('keydown', onKey, true);
-  }
-
-  recorder.addEventListener('click', () => {
-    if (recording) stopRecording();
-    else startRecording();
+      return dup ? `Also bound to ${labelForBinding(dup.moduleId, dup.commandId)}.` : null;
+    },
   });
-  recorder.addEventListener('blur', () => { if (recording) stopRecording(); });
-  clearBtn.addEventListener('click', () => {
-    saveShortcut(moduleId, cmd.id, null).then(refresh);
-  });
+  shortcutRefreshers.push(refresh);
 
   controls.appendChild(recorder);
   controls.appendChild(clearBtn);
   row.appendChild(controls);
   row.appendChild(warning);
-  refresh();
   return row;
 }
 
@@ -412,6 +321,7 @@ function renderModuleSection(mod, enabledMap, savedOpts) {
 
 function render(enabledMap, savedOpts) {
   liveOpts = savedOpts;
+  shortcutRefreshers = [];
   sidebar.textContent = '';
   content.textContent = '';
 
@@ -462,6 +372,15 @@ async function onOptionChange(moduleId, optId, type, input) {
 
 browser.permissions.onAdded.addListener(refreshHostAccess);
 browser.permissions.onRemoved.addListener(refreshHostAccess);
+
+// Keep the shared shortcut store live as the single source of truth: a binding
+// changed elsewhere (e.g. the Navigation Links per-link editor, which writes the
+// same moduleShortcutsItem) refreshes every recorder so duplicate warnings stay
+// accurate without a page reload.
+moduleShortcutsItem.watch((newValue) => {
+  liveShortcuts = newValue || {};
+  for (const refresh of shortcutRefreshers) refresh();
+});
 
 Promise.all([
   enabledModulesItem.getValue(),

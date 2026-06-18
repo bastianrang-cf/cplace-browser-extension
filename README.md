@@ -20,7 +20,7 @@ A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions -
 | Domain CSS injection | off | Inject custom CSS on cplace pages matching a hostname/path glob — environment labels (DEV/TEST badges), admin-access highlighting, per-tenant visuals. Ships with a default admin-border rule. |
 | Language Switcher | off | Switch the cplace display language from the extension popup |
 | Low-Code Logs toasts | off | Toast notifications for new low-code log entries on cplace pages, with per-field include/exclude filters |
-| Navigation Links | on | Adds a popup submenu with quick links to common cplace pages (Workspaces, Packages, Batch Jobs, Low-Code Dashboard, Low-Code Logs, API Tokens, AI Settings, Deleted Items, Activity Stream, My Drafts). Each link can be individually toggled in the module options. |
+| Navigation Links | on | Adds a popup submenu with quick links to common cplace pages (Workspaces, Packages, Batch Jobs, Low-Code Dashboard, Low-Code Logs, API Tokens, AI Settings, Deleted Items, Activity Stream, My Drafts). Each link can be individually toggled, you can add your own custom links (label + relative path), and any link — built-in or custom — can be bound to a keyboard shortcut that opens it on a cplace page. |
 | Show system version as badge | on | Displays the detected cplace version number as a badge on the toolbar icon |
 | System Information | off | Adds a "System Info" popup button that fetches the tenant's system info and shows it in a dialog |
 
@@ -55,6 +55,10 @@ you can trigger it directly on a cplace page without opening the popup:
   shortcut to that action — pressing it does exactly what clicking the popup button does.
 - **Snoozable modules** (Batch Jobs overlay, Low-Code Logs toasts, Domain CSS injection)
   bind the shortcut to **snooze / un-snooze** for the current tenant.
+- **Navigation Links** bind a shortcut **per link** (built-in or custom) — pressing it
+  opens that link on the current cplace tenant in a new tab, just like clicking it in the
+  popup. You can also add your own custom links (label + relative path) from the module
+  options.
 
 Shortcuts are **off by default**. Click **Set shortcut**, then press the combination you
 want. Shortcuts are stored in a platform-independent form using a logical primary
