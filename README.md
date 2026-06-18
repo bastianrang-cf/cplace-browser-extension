@@ -61,8 +61,10 @@ want. Shortcuts are stored in a platform-independent form using a logical primar
 modifier that resolves to **⌘ on macOS** and **Ctrl on Windows/Linux**, so a single
 binding works on both — and the Options UI renders the matching glyphs for your platform.
 At least one modifier (⌘/Ctrl or ⌥/Alt) is required, and the editor warns when a combo
-collides with a known browser/OS shortcut or is already bound to another command.
-Shortcuts only fire on cplace pages while the owning module is active.
+collides with a known browser/OS shortcut, a common rich-text editor shortcut, or is
+already bound to another command. Shortcuts fire only on cplace pages: **action**
+shortcuts while the owning module is active, and **snooze** shortcuts on any cplace page
+for the tenant — including while the module is snoozed, which is how you un-snooze it.
 
 ---
 

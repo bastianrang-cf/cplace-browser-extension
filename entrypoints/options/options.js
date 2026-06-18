@@ -12,6 +12,7 @@ import {
   isValidCombo,
   combosEqual,
   reservedConflict,
+  editorComboWarning,
   detectPlatform,
 } from '../../features/shortcuts.js';
 
@@ -268,7 +269,7 @@ function buildShortcutRow(moduleId, cmd) {
       if (dup) {
         showWarning(`Also bound to ${labelForBinding(dup.moduleId, dup.commandId)}.`);
       } else {
-        showWarning(reservedConflict(combo, platform));
+        showWarning(reservedConflict(combo, platform) || editorComboWarning(combo, platform));
       }
     } else {
       recorder.textContent = 'Set shortcut';

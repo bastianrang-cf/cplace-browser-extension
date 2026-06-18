@@ -9,6 +9,7 @@ import {
   codeToKeyLabel,
   comboToDisplay,
   reservedConflict,
+  editorComboWarning,
   bindableCommands,
   SNOOZE_COMMAND_ID,
 } from './shortcuts.js';
@@ -165,6 +166,31 @@ describe('reservedConflict', () => {
   it('does not warn on a safe combo', () => {
     expect(reservedConflict({ mod: true, alt: true, code: 'KeyL' }, 'mac')).toBeNull();
     expect(reservedConflict({ mod: true, code: 'KeyY' }, 'other')).toBeNull();
+  });
+});
+
+describe('editorComboWarning', () => {
+  it('warns on common rich-text editor combos (mod-only)', () => {
+    expect(editorComboWarning({ mod: true, code: 'KeyB' }, 'mac')).toMatch(/bold/);
+    expect(editorComboWarning({ mod: true, code: 'KeyZ' }, 'other')).toMatch(/undo/);
+    expect(editorComboWarning({ mod: true, code: 'KeyK' }, 'other')).toMatch(/link/);
+  });
+
+  it('warns about AltGr clashes for Ctrl+Alt combos on Windows/Linux', () => {
+    expect(editorComboWarning({ mod: true, alt: true, code: 'KeyQ' }, 'other')).toMatch(/AltGr/);
+  });
+
+  it('does not raise the AltGr warning on macOS', () => {
+    expect(editorComboWarning({ mod: true, alt: true, code: 'KeyQ' }, 'mac')).toBeNull();
+  });
+
+  it('does not warn on editor combos that carry extra modifiers', () => {
+    expect(editorComboWarning({ mod: true, shift: true, code: 'KeyB' }, 'mac')).toBeNull();
+  });
+
+  it('does not warn on a safe combo', () => {
+    expect(editorComboWarning({ mod: true, code: 'KeyJ' }, 'other')).toBeNull();
+    expect(editorComboWarning({ mod: true, alt: true, code: 'KeyJ' }, 'mac')).toBeNull();
   });
 });
 

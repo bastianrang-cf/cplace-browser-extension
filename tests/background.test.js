@@ -473,6 +473,21 @@ describe('background — onInstalled migration', () => {
     expect(stored.moduleOptions).not.toHaveProperty('admin-access-highlight');
     expect(stored.moduleOptions['batch-jobs'].limitJobs).toBe(5);
   });
+
+  it('prunes keyboard shortcuts bound to modules that no longer exist', async () => {
+    await fakeBrowser.storage.local.set({
+      moduleShortcuts: {
+        'system-info': { 'show-system-info': { mod: true, code: 'KeyI' } },
+        'ghost-module': { snooze: { mod: true, code: 'KeyG' } },
+      },
+    });
+    await loadBackground();
+    await fakeBrowser.runtime.onInstalled.trigger({ reason: 'update' });
+
+    const stored = await fakeBrowser.storage.local.get('moduleShortcuts');
+    expect(stored.moduleShortcuts).toHaveProperty('system-info');
+    expect(stored.moduleShortcuts).not.toHaveProperty('ghost-module');
+  });
 });
 
 describe('background — onMessage: domain-css', () => {

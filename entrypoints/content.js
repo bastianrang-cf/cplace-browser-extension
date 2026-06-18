@@ -226,6 +226,7 @@ export default defineContentScript({
           if (mod.snoozable && commandId === SNOOZE_COMMAND_ID) {
             if (desiredEnabled[moduleId] && lastFound === true && lastContext?.baseUrl) {
               event.preventDefault();
+              event.stopPropagation();
               toggleSnooze(moduleId);
               return;
             }
@@ -234,6 +235,7 @@ export default defineContentScript({
 
           if (activeModules.has(moduleId) && typeof mod.onAction === 'function') {
             event.preventDefault();
+            event.stopPropagation();
             try {
               mod.onAction(commandId, lastContext);
             } catch (e) {

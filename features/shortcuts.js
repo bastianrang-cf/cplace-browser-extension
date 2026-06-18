@@ -146,6 +146,26 @@ export function reservedConflict(combo, platform = detectPlatform()) {
   return null;
 }
 
+// App-level cautions (warn, don't block) that go beyond browser/OS reservations:
+//  - common rich-text editor combos (cplace embeds heavy editors), since
+//    modifier-bearing shortcuts fire even while the user is typing;
+//  - on Windows/Linux, AltGr surfaces as Ctrl+Alt, so a Ctrl+Alt+<key> binding
+//    can clash with AltGr-composed characters (e.g. German @ is AltGr+Q).
+const EDITOR_KEYS = { B: 'bold', I: 'italic', U: 'underline', K: 'link', Z: 'undo', Y: 'redo', S: 'save' };
+
+export function editorComboWarning(combo, platform = detectPlatform()) {
+  if (!combo?.code) return null;
+  const display = comboToDisplay(combo, platform);
+  if (platform !== 'mac' && combo.mod && combo.alt) {
+    return `${display} can clash with AltGr-composed characters on some keyboard layouts.`;
+  }
+  const key = codeToKeyLabel(combo.code).toUpperCase();
+  if (combo.mod && !combo.alt && !combo.shift && EDITOR_KEYS[key]) {
+    return `${display} is a common rich-text editor shortcut (${EDITOR_KEYS[key]}) and may not work while typing in cplace editors.`;
+  }
+  return null;
+}
+
 // Enumerate the keyboard-bindable commands for a module descriptor.
 //  - snoozable modules expose a single "snooze / unsnooze" command;
 //  - otherwise, one command per declared action.
