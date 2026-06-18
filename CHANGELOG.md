@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.2.0...v1.3.0) (2026-06-18)
+
+
+### Features
+
+* configurable keyboard shortcuts for module actions and snooze ([#134](https://github.com/bastianrang-cf/cplace-browser-extension/issues/134)) ([2c27a74](https://github.com/bastianrang-cf/cplace-browser-extension/commit/2c27a74f089a4c358208e73792b741355edb7966))
+* **nav-links:** custom links and per-link keyboard shortcuts ([#136](https://github.com/bastianrang-cf/cplace-browser-extension/issues/136)) ([b4b187f](https://github.com/bastianrang-cf/cplace-browser-extension/commit/b4b187faac396732638892884e3a57140ecbfc93))
+
 ## [1.2.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.1.2...v1.2.0) (2026-06-12)
 
 
