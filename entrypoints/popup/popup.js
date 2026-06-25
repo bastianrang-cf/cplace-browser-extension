@@ -69,9 +69,20 @@ function buildSnoozeRow(label, state, until, onClick) {
   return btn;
 }
 
-// Builds a shared accordion group: a header toggle (icon + label + chevron) and an
-// empty list. The group expands on hover and on keyboard focus (no click needed),
-// keeping the Snooze and Nav-Links submenus visually and behaviourally identical.
+// Tracks every group's close fn so opening one collapses the others (single-open
+// invariant) — keeps at most one flyout on screen at a time.
+const navGroupClosers = [];
+
+// Grace period before a flyout closes after the cursor leaves it. The flyout sits
+// flush to the toggle's right edge (no dead zone), and this delay covers diagonal
+// cursor moves toward it — together they approximate a native menu's "safe triangle".
+const NAV_GROUP_CLOSE_DELAY_MS = 200;
+
+// Builds a shared menu group: a header toggle (icon + label + chevron) and a
+// flyout panel that cascades to the right on hover/focus (no click needed), like a
+// native context-menu submenu. The flyout is taken out of normal flow, so opening
+// or closing it never reflows the rail — sibling items never jump under the cursor.
+// Keeps the Snooze and Nav-Links submenus visually and behaviourally identical.
 function createNavGroup({ icon, label }) {
   const group = document.createElement('div');
   group.className = 'nav-group';
@@ -80,6 +91,7 @@ function createNavGroup({ icon, label }) {
   toggle.type = 'button';
   toggle.className = 'nav-group__toggle';
   toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-haspopup', 'menu');
 
   const iconEl = document.createElement('span');
   iconEl.className = 'btn-icon';
@@ -96,16 +108,38 @@ function createNavGroup({ icon, label }) {
   toggle.append(iconEl, labelEl, chevron);
 
   const list = document.createElement('div');
-  list.className = 'nav-group__list';
+  list.className = 'nav-group__list nav-group__flyout';
+  list.setAttribute('role', 'menu');
 
   const setOpen = (open) => {
     group.classList.toggle('nav-group--open', open);
     toggle.setAttribute('aria-expanded', String(open));
   };
-  group.addEventListener('mouseenter', () => setOpen(true));
-  group.addEventListener('mouseleave', () => setOpen(false));
-  group.addEventListener('focusin', () => setOpen(true));
-  group.addEventListener('focusout', () => setOpen(false));
+  navGroupClosers.push(() => setOpen(false));
+
+  let closeTimer = null;
+  const cancelClose = () => {
+    if (closeTimer != null) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
+    }
+  };
+  const open = () => {
+    cancelClose();
+    for (const close of navGroupClosers) close();
+    setOpen(true);
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer = setTimeout(() => {
+      closeTimer = null;
+      setOpen(false);
+    }, NAV_GROUP_CLOSE_DELAY_MS);
+  };
+  group.addEventListener('mouseenter', open);
+  group.addEventListener('mouseleave', scheduleClose);
+  group.addEventListener('focusin', open);
+  group.addEventListener('focusout', scheduleClose);
 
   group.append(toggle, list);
   return { group, list };

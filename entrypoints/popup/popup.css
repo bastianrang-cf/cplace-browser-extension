@@ -15,6 +15,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Fixed rail width so revealing a flyout (which floats to the right, out of
+     flow) grows the popup into empty space instead of resizing the rail items. */
+  width: 210px;
 }
 
 button {
@@ -86,42 +89,61 @@ button:hover {
 .nav-group {
   display: flex;
   flex-direction: column;
+  /* Positioning context for the flyout panel. */
+  position: relative;
 }
 
 .nav-group__toggle {
   justify-content: flex-start;
 }
 
+/* Highlight the parent item while its flyout is open, like a native menu. */
+.nav-group--open .nav-group__toggle {
+  background: color-mix(in srgb, CanvasText 14%, transparent);
+}
+
 .nav-group__chevron {
   margin-left: auto;
   display: inline-block;
-  transition: transform 0.15s ease;
   line-height: 1;
+  opacity: 0.6;
 }
 
+/* Right-pointing caret: the standard "has submenu" affordance. */
 .nav-group__chevron::before {
   content: '▸';
 }
 
-.nav-group--open .nav-group__chevron {
-  transform: rotate(90deg);
-}
-
-.nav-group__list {
+/* Flyout panel: floats to the right of its toggle, flush to its edge, out of
+   normal flow so opening/closing never reflows the rail. Styled like a native
+   OS popup menu (opaque surface, hairline border, rounded, soft shadow). */
+.nav-group__flyout {
   display: none;
+  position: absolute;
+  top: 0;
+  left: 100%;
   flex-direction: column;
-  padding-left: 8px;
-  margin-top: 2px;
   gap: 2px;
+  min-width: 180px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 4px;
+  background: Canvas;
+  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
+  border-radius: 8px;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.22),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  z-index: 10;
 }
 
-.nav-group--open .nav-group__list {
+.nav-group--open .nav-group__flyout {
   display: flex;
 }
 
 .nav-group__link {
   display: block;
-  padding: 6px 12px 6px 28px;
+  padding: 6px 10px;
   font-size: 13px;
   color: CanvasText;
   text-decoration: none;
@@ -130,15 +152,36 @@ button:hover {
   cursor: pointer;
 }
 
-.nav-group__link:hover {
-  background: color-mix(in srgb, CanvasText 10%, transparent);
+.nav-group__link:hover,
+.nav-group__link:focus-visible {
+  background: AccentColor;
+  color: AccentColorText;
+  outline: none;
 }
 
 /* ── Snooze menu rows (tri-state toggles) ──────────────────── */
 
+/* Snooze rows live inside a flyout — drop the chunky default button chrome and
+   render them as native menu items (transparent, borderless, accent on hover). */
 .snooze-row {
-  padding: 6px 12px;
+  padding: 6px 10px;
   font-size: 13px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.snooze-row:hover,
+.snooze-row:focus-visible {
+  background: AccentColor;
+  color: AccentColorText;
+  outline: none;
+}
+
+/* Keep the secondary state text legible against the accent highlight. */
+.snooze-row:hover .snooze-row__state,
+.snooze-row:focus-visible .snooze-row__state {
+  opacity: 0.9;
 }
 
 .snooze-row__label {
