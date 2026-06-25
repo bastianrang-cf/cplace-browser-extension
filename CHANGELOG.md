@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.0...v1.3.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* render popup submenus as native flyouts to stop hover jump ([#141](https://github.com/bastianrang-cf/cplace-browser-extension/issues/141)) ([98658fd](https://github.com/bastianrang-cf/cplace-browser-extension/commit/98658fdb1381328245c3912a58fac8d6cf794c26))
+
 ## [1.3.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.2.0...v1.3.0) (2026-06-18)
 
 
