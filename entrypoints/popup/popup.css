@@ -1,6 +1,8 @@
 :root {
   color-scheme: light dark;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --rail-width: 210px;
+  --flyout-min-width: 180px;
 }
 
 body {
@@ -11,13 +13,22 @@ body {
   min-width: 180px;
 }
 
+/* A flyout is positioned absolute/out-of-flow, so it never contributes to the
+   popup's auto-computed window size. Reserve room for it up front — only when
+   a flyout can appear — otherwise it paints past the popup's edge and is
+   invisible. +2px covers the flyout's own left/right border. */
+body:has(.nav-group__flyout) {
+  min-width: calc(var(--rail-width) + var(--flyout-min-width) + 2px);
+}
+
 #actions {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* Fixed rail width so revealing a flyout (which floats to the right, out of
-     flow) grows the popup into empty space instead of resizing the rail items. */
-  width: 210px;
+  /* Fixed rail width so a flyout (which floats to the right, out of flow) opens
+     into the space reserved by the body:has() rule above instead of resizing
+     the rail items. */
+  width: var(--rail-width);
 }
 
 button {
@@ -124,7 +135,7 @@ button:hover {
   left: 100%;
   flex-direction: column;
   gap: 2px;
-  min-width: 180px;
+  min-width: var(--flyout-min-width);
   max-height: calc(100vh - 16px);
   overflow-y: auto;
   padding: 4px;
