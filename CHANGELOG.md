@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.1...v1.3.2) (2026-07-01)
+
+
+### Bug Fixes
+
+* **popup:** reserve width for flyout submenus so they aren't clipped ([#143](https://github.com/bastianrang-cf/cplace-browser-extension/issues/143)) ([4b1b873](https://github.com/bastianrang-cf/cplace-browser-extension/commit/4b1b8732f53dd0e2bd964da268c9d1de770448fe))
+
 ## [1.3.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.0...v1.3.1) (2026-06-25)
 
 
