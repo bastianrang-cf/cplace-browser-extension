@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.2...v1.3.3) (2026-07-02)
+
+
+### Miscellaneous Chores
+
+* release 1.3.3 ([#149](https://github.com/bastianrang-cf/cplace-browser-extension/issues/149)) ([1fd4671](https://github.com/bastianrang-cf/cplace-browser-extension/commit/1fd46710dc14e53c854dd3a4721d1835a4ffced2))
+
 ## [1.3.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.1...v1.3.2) (2026-07-01)
 
 
