@@ -1,7 +1,23 @@
 import { registry } from '../../features/registry.js';
-import { enabledModulesItem, moduleOptionsItem, moduleSnoozeItem, tabBaseUrlItem } from '../../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, moduleShortcutsItem, moduleSnoozeItem, tabBaseUrlItem } from '../../features/storage.js';
 import { hasUniversalHostAccess, requestUniversalHostAccess } from '../../features/permissions.js';
 import { pruneSnooze, snoozeState, snoozeEntryFor } from '../../features/snooze.js';
+import { comboToDisplay, detectPlatform } from '../../features/shortcuts.js';
+
+// Appends a right-aligned accelerator hint (e.g. "⌘L" / "Ctrl+L") to a menu row
+// when its command has a keyboard shortcut bound, mirroring a native menu's
+// accelerator column. Purely a discoverability cue — the shortcut itself fires
+// on cplace pages (the content-script listener), not from the popup. No-op when
+// nothing is bound. aria-hidden like the other icon/glyph decorations.
+function appendShortcutHint(el, combo, platform) {
+  const label = comboToDisplay(combo, platform);
+  if (!label) return;
+  const span = document.createElement('span');
+  span.className = 'menu-shortcut';
+  span.setAttribute('aria-hidden', 'true');
+  span.textContent = label;
+  el.appendChild(span);
+}
 
 function renderActivationGate(container) {
   const wrap = document.createElement('div');
@@ -70,18 +86,20 @@ function buildSnoozeRow(label, state, until, onClick) {
 }
 
 // Tracks every group's close fn so opening one collapses the others (single-open
-// invariant) — keeps at most one flyout on screen at a time.
+// invariant) — keeps at most one group expanded at a time.
 const navGroupClosers = [];
 
-// Grace period before a flyout closes after the cursor leaves it. The flyout sits
-// flush to the toggle's right edge (no dead zone), and this delay covers diagonal
-// cursor moves toward it — together they approximate a native menu's "safe triangle".
+// Grace period before an expanded group collapses after the cursor leaves it.
+// Collapsing reflows the rail (siblings slide back up), so an immediate close on
+// every mouseleave would let the list "wobble" as items jump under the cursor.
+// The delay lets the cursor settle before the group folds away.
 const NAV_GROUP_CLOSE_DELAY_MS = 200;
 
 // Builds a shared menu group: a header toggle (icon + label + chevron) and a
-// flyout panel that cascades to the right on hover/focus (no click needed), like a
-// native context-menu submenu. The flyout is taken out of normal flow, so opening
-// or closing it never reflows the rail — sibling items never jump under the cursor.
+// submenu panel that expands inline directly below the toggle on hover/focus (no
+// click needed), like an accordion. The panel is in normal flow, so opening grows
+// the popup downward at constant width — the window never resizes sideways. The
+// single-open invariant plus the close delay above keep the reflow from wobbling.
 // Keeps the Snooze and Nav-Links submenus visually and behaviourally identical.
 function createNavGroup({ icon, label }) {
   const group = document.createElement('div');
@@ -108,7 +126,7 @@ function createNavGroup({ icon, label }) {
   toggle.append(iconEl, labelEl, chevron);
 
   const list = document.createElement('div');
-  list.className = 'nav-group__list nav-group__flyout';
+  list.className = 'nav-group__list nav-group__panel';
   list.setAttribute('role', 'menu');
 
   const setOpen = (open) => {
@@ -219,13 +237,16 @@ async function init() {
   const tabIdParam = new URLSearchParams(location.search).get('tabId');
   const tabId = tabIdParam != null ? Number(tabIdParam) : null;
 
-  const [storedMap, optsMap, tabBaseUrls] = await Promise.all([
+  const [storedMap, optsMap, tabBaseUrls, shortcutsMap] = await Promise.all([
     enabledModulesItem.getValue(),
     moduleOptionsItem.getValue(),
     tabBaseUrlItem.getValue(),
+    moduleShortcutsItem.getValue(),
   ]);
   const baseUrl = (tabId != null ? tabBaseUrls[tabId] : null) ?? null;
   const enabledMap = { ...registry.defaultEnabledMap(), ...(storedMap || {}) };
+  const platform = detectPlatform();
+  const shortcuts = shortcutsMap || {};
 
   const actionItems = [];
   const navLinksMods = [];
@@ -288,6 +309,9 @@ async function init() {
     const labelEl = document.createElement('span');
     labelEl.textContent = action.label;
     btn.appendChild(labelEl);
+    // A snoozable module only ever binds the 'snooze' command, never its action
+    // ids, so this lookup is naturally empty for those — no hint is shown.
+    appendShortcutHint(btn, shortcuts[moduleId]?.[action.id], platform);
     btn.addEventListener('click', () => {
       if (tabId != null) {
         browser.tabs
@@ -308,8 +332,13 @@ async function init() {
     for (const { label, path } of links) {
       const a = document.createElement('a');
       a.href = baseUrl + path;
-      a.textContent = label;
       a.className = 'nav-group__link';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'nav-group__link-label';
+      labelEl.textContent = label;
+      a.appendChild(labelEl);
+      // Per-link shortcuts are keyed by path under the module's id.
+      appendShortcutHint(a, shortcuts[mod.id]?.[path], platform);
       a.addEventListener('click', (e) => {
         e.preventDefault();
         browser.tabs.create({ url: baseUrl + path });
