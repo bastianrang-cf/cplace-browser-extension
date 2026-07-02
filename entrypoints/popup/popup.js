@@ -1,7 +1,23 @@
 import { registry } from '../../features/registry.js';
-import { enabledModulesItem, moduleOptionsItem, moduleSnoozeItem, tabBaseUrlItem } from '../../features/storage.js';
+import { enabledModulesItem, moduleOptionsItem, moduleShortcutsItem, moduleSnoozeItem, tabBaseUrlItem } from '../../features/storage.js';
 import { hasUniversalHostAccess, requestUniversalHostAccess } from '../../features/permissions.js';
 import { pruneSnooze, snoozeState, snoozeEntryFor } from '../../features/snooze.js';
+import { comboToDisplay, detectPlatform } from '../../features/shortcuts.js';
+
+// Appends a right-aligned accelerator hint (e.g. "⌘L" / "Ctrl+L") to a menu row
+// when its command has a keyboard shortcut bound, mirroring a native menu's
+// accelerator column. Purely a discoverability cue — the shortcut itself fires
+// on cplace pages (the content-script listener), not from the popup. No-op when
+// nothing is bound. aria-hidden like the other icon/glyph decorations.
+function appendShortcutHint(el, combo, platform) {
+  const label = comboToDisplay(combo, platform);
+  if (!label) return;
+  const span = document.createElement('span');
+  span.className = 'menu-shortcut';
+  span.setAttribute('aria-hidden', 'true');
+  span.textContent = label;
+  el.appendChild(span);
+}
 
 function renderActivationGate(container) {
   const wrap = document.createElement('div');
@@ -221,13 +237,16 @@ async function init() {
   const tabIdParam = new URLSearchParams(location.search).get('tabId');
   const tabId = tabIdParam != null ? Number(tabIdParam) : null;
 
-  const [storedMap, optsMap, tabBaseUrls] = await Promise.all([
+  const [storedMap, optsMap, tabBaseUrls, shortcutsMap] = await Promise.all([
     enabledModulesItem.getValue(),
     moduleOptionsItem.getValue(),
     tabBaseUrlItem.getValue(),
+    moduleShortcutsItem.getValue(),
   ]);
   const baseUrl = (tabId != null ? tabBaseUrls[tabId] : null) ?? null;
   const enabledMap = { ...registry.defaultEnabledMap(), ...(storedMap || {}) };
+  const platform = detectPlatform();
+  const shortcuts = shortcutsMap || {};
 
   const actionItems = [];
   const navLinksMods = [];
@@ -290,6 +309,9 @@ async function init() {
     const labelEl = document.createElement('span');
     labelEl.textContent = action.label;
     btn.appendChild(labelEl);
+    // A snoozable module only ever binds the 'snooze' command, never its action
+    // ids, so this lookup is naturally empty for those — no hint is shown.
+    appendShortcutHint(btn, shortcuts[moduleId]?.[action.id], platform);
     btn.addEventListener('click', () => {
       if (tabId != null) {
         browser.tabs
@@ -310,8 +332,13 @@ async function init() {
     for (const { label, path } of links) {
       const a = document.createElement('a');
       a.href = baseUrl + path;
-      a.textContent = label;
       a.className = 'nav-group__link';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'nav-group__link-label';
+      labelEl.textContent = label;
+      a.appendChild(labelEl);
+      // Per-link shortcuts are keyed by path under the module's id.
+      appendShortcutHint(a, shortcuts[mod.id]?.[path], platform);
       a.addEventListener('click', (e) => {
         e.preventDefault();
         browser.tabs.create({ url: baseUrl + path });
