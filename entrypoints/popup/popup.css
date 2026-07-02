@@ -2,7 +2,6 @@
   color-scheme: light dark;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --rail-width: 210px;
-  --flyout-min-width: 180px;
 }
 
 body {
@@ -13,26 +12,18 @@ body {
   min-width: 180px;
 }
 
-/* A flyout is positioned absolute/out-of-flow, so it never contributes to the
-   popup's auto-computed window size. Reserve room for it up front — only when
-   a flyout can appear — otherwise it paints past the popup's edge and is
-   invisible. +2px covers the flyout's own left/right border. */
-body:has(.nav-group__flyout) {
-  min-width: calc(var(--rail-width) + var(--flyout-min-width) + 2px);
-}
-
 #actions {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* Fixed rail width so a flyout (which floats to the right, out of flow) opens
-     into the space reserved by the body:has() rule above instead of resizing
-     the rail items. */
+  /* Fixed width keeps the popup a constant size: submenus expand inline (growing
+     the popup downward), so the window never resizes horizontally — no reserved
+     empty margin, no horizontal resize flicker. */
   width: var(--rail-width);
 }
 
 /* Flat, native-context-menu look shared by every rail button and reused
-   (redundantly but harmlessly) by the flyout rows, which redeclare it. */
+   (redundantly but harmlessly) by the submenu rows, which redeclare it. */
 button {
   display: flex;
   align-items: center;
@@ -106,18 +97,17 @@ button:focus-visible {
 .nav-group {
   display: flex;
   flex-direction: column;
-  /* Positioning context for the flyout panel. */
-  position: relative;
 }
 
 .nav-group__toggle {
   justify-content: flex-start;
 }
 
-/* Highlight the parent item while its flyout is open, like a native menu. */
-.nav-group--open .nav-group__toggle {
-  background: AccentColor;
-  color: AccentColorText;
+/* Tint the section header while its submenu is expanded so it reads as an open
+   accordion group. :not(:hover) lets the full accent highlight still win when
+   the header itself is hovered/focused. */
+.nav-group--open .nav-group__toggle:not(:hover):not(:focus-visible) {
+  background: color-mix(in srgb, CanvasText 8%, transparent);
 }
 
 .nav-group__chevron {
@@ -125,37 +115,36 @@ button:focus-visible {
   display: inline-block;
   line-height: 1;
   opacity: 0.6;
+  transition: transform 120ms ease;
 }
 
-/* Right-pointing caret: the standard "has submenu" affordance. */
+/* Caret points right when collapsed and rotates down when the group expands —
+   the standard accordion disclosure affordance. */
 .nav-group__chevron::before {
   content: '▸';
 }
 
-/* Flyout panel: floats to the right of its toggle, flush to its edge, out of
-   normal flow so opening/closing never reflows the rail. Styled like a native
-   OS popup menu (opaque surface, hairline border, rounded, soft shadow). */
-.nav-group__flyout {
-  display: none;
-  position: absolute;
-  top: 0;
-  left: 100%;
-  flex-direction: column;
-  gap: 2px;
-  min-width: var(--flyout-min-width);
-  max-height: calc(100vh - 16px);
-  overflow-y: auto;
-  padding: 4px;
-  background: Canvas;
-  border: 1px solid color-mix(in srgb, CanvasText 18%, transparent);
-  border-radius: 8px;
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.22),
-    0 0 0 0.5px rgba(0, 0, 0, 0.08);
-  z-index: 10;
+.nav-group--open .nav-group__chevron {
+  transform: rotate(90deg);
 }
 
-.nav-group--open .nav-group__flyout {
+/* Submenu panel: expands inline directly below its toggle (in normal flow), so
+   opening grows the popup downward at constant width instead of floating out to
+   the side. Indented with a hairline left rail to read as nested under the
+   parent. A max-height caps very long link lists so the popup can't grow
+   unbounded — it scrolls instead. */
+.nav-group__panel {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 2px 12px;
+  padding-left: 8px;
+  border-left: 2px solid color-mix(in srgb, CanvasText 12%, transparent);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.nav-group--open .nav-group__panel {
   display: flex;
 }
 
@@ -179,8 +168,8 @@ button:focus-visible {
 
 /* ── Snooze menu rows (tri-state toggles) ──────────────────── */
 
-/* Snooze rows live inside a flyout — drop the chunky default button chrome and
-   render them as native menu items (transparent, borderless, accent on hover). */
+/* Snooze rows live inside a submenu panel — drop the chunky default button chrome
+   and render them as native menu items (transparent, borderless, accent on hover). */
 .snooze-row {
   padding: 6px 10px;
   font-size: 13px;

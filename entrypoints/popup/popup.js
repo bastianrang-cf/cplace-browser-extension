@@ -70,18 +70,20 @@ function buildSnoozeRow(label, state, until, onClick) {
 }
 
 // Tracks every group's close fn so opening one collapses the others (single-open
-// invariant) — keeps at most one flyout on screen at a time.
+// invariant) — keeps at most one group expanded at a time.
 const navGroupClosers = [];
 
-// Grace period before a flyout closes after the cursor leaves it. The flyout sits
-// flush to the toggle's right edge (no dead zone), and this delay covers diagonal
-// cursor moves toward it — together they approximate a native menu's "safe triangle".
+// Grace period before an expanded group collapses after the cursor leaves it.
+// Collapsing reflows the rail (siblings slide back up), so an immediate close on
+// every mouseleave would let the list "wobble" as items jump under the cursor.
+// The delay lets the cursor settle before the group folds away.
 const NAV_GROUP_CLOSE_DELAY_MS = 200;
 
 // Builds a shared menu group: a header toggle (icon + label + chevron) and a
-// flyout panel that cascades to the right on hover/focus (no click needed), like a
-// native context-menu submenu. The flyout is taken out of normal flow, so opening
-// or closing it never reflows the rail — sibling items never jump under the cursor.
+// submenu panel that expands inline directly below the toggle on hover/focus (no
+// click needed), like an accordion. The panel is in normal flow, so opening grows
+// the popup downward at constant width — the window never resizes sideways. The
+// single-open invariant plus the close delay above keep the reflow from wobbling.
 // Keeps the Snooze and Nav-Links submenus visually and behaviourally identical.
 function createNavGroup({ icon, label }) {
   const group = document.createElement('div');
@@ -108,7 +110,7 @@ function createNavGroup({ icon, label }) {
   toggle.append(iconEl, labelEl, chevron);
 
   const list = document.createElement('div');
-  list.className = 'nav-group__list nav-group__flyout';
+  list.className = 'nav-group__list nav-group__panel';
   list.setAttribute('role', 'menu');
 
   const setOpen = (open) => {
