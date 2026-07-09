@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.4...v1.4.0) (2026-07-09)
+
+
+### Features
+
+* **options:** show GitHub link and version in header ([#158](https://github.com/bastianrang-cf/cplace-browser-extension/issues/158)) ([4dcfa37](https://github.com/bastianrang-cf/cplace-browser-extension/commit/4dcfa37e520dcefebb2f64aa46c59495bb26f6e3))
+* **types-list:** add searchable types list popup dialog ([#156](https://github.com/bastianrang-cf/cplace-browser-extension/issues/156)) ([9dfcc7a](https://github.com/bastianrang-cf/cplace-browser-extension/commit/9dfcc7aa134b3a88da0abcdb61a3b4c75db18e56)), closes [#155](https://github.com/bastianrang-cf/cplace-browser-extension/issues/155)
+
 ## [1.3.4](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.3...v1.3.4) (2026-07-02)
 
 
