@@ -17,6 +17,9 @@ const platform = detectPlatform();
 const sidebar = document.getElementById('sidebar');
 const content = document.getElementById('content');
 const heroStatus = document.getElementById('hero-status');
+const heroVersion = document.getElementById('hero-version');
+
+heroVersion.textContent = `v${browser.runtime.getManifest().version}`;
 
 const HOST_SECTION_ID = 'sec-host-access';
 
