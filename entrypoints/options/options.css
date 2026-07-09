@@ -59,7 +59,7 @@ body {
 /* Hero header */
 .hero {
   display: grid;
-  grid-template-columns: 48px 1fr auto;
+  grid-template-columns: 48px 1fr auto auto;
   gap: 16px;
   align-items: center;
   padding: 24px 32px;
@@ -117,6 +117,40 @@ body {
 .hero__status[data-state="missing"] {
   background: rgba(255, 200, 120, 0.18);
   border-color: rgba(255, 200, 120, 0.5);
+}
+
+.hero__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hero__version {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.hero__github {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-primary-contrast);
+  opacity: 0.85;
+  border-radius: 6px;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.hero__github:hover,
+.hero__github:focus-visible {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.hero__github:focus-visible {
+  outline: 2px solid var(--c-primary-contrast);
+  outline-offset: 2px;
 }
 
 /* Layout */
