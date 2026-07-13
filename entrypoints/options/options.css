@@ -460,6 +460,27 @@ body {
   accent-color: var(--c-primary);
 }
 
+.module-option-row select {
+  font: inherit;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border-strong);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.module-option-row select:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 1px;
+  border-color: var(--c-primary);
+}
+
+.module-option-note {
+  color: var(--c-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 /* Domain-css editor (reuses runtime-emitted class names) */
 .domain-css-editor {
   display: grid;

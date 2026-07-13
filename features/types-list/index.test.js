@@ -360,5 +360,88 @@ describe('types-list module', () => {
       expect(hrefSpy).toHaveBeenCalledWith('https://x.example/acme/typeDefinitions/uid-2/TypeB');
       mod.revert();
     });
+
+    it('Shift+Enter opens the definition page in a new tab (default new-tab modifier)', async () => {
+      const hrefSpy = vi.spyOn(window.location, 'href', 'set').mockImplementation(() => {});
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-types-list');
+      dispatchResult(sampleTypes);
+
+      const input = document.querySelector('#cplace-types-list-dialog .cplace-tl-input');
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://x.example/acme/typeDefinitions/uid-1/TypeA',
+        '_blank',
+        'noopener,noreferrer',
+      );
+      expect(hrefSpy).not.toHaveBeenCalled();
+      mod.revert();
+    });
+
+    it('Alt+Shift+Enter opens the attributes page in a new tab', async () => {
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-types-list');
+      dispatchResult(sampleTypes);
+
+      const input = document.querySelector('#cplace-types-list-dialog .cplace-tl-input');
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', altKey: true, shiftKey: true, bubbles: true }),
+      );
+
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://x.example/acme/typeDefinition/attributes?id=uid-1',
+        '_blank',
+        'noopener,noreferrer',
+      );
+      mod.revert();
+    });
+
+    it('honors a configured secondary modifier (Ctrl instead of Alt)', async () => {
+      const hrefSpy = vi.spyOn(window.location, 'href', 'set').mockImplementation(() => {});
+      const { mod } = await loadMod();
+      mod.apply({ secondaryModifier: 'ctrl', newTabModifier: 'shift' }, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-types-list');
+      dispatchResult(sampleTypes);
+
+      const input = document.querySelector('#cplace-types-list-dialog .cplace-tl-input');
+      // Ctrl now selects the attributes page...
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+      expect(hrefSpy).toHaveBeenLastCalledWith('https://x.example/acme/typeDefinition/attributes?id=uid-1');
+
+      // ...and Alt no longer does (falls back to the definition page).
+      mod.onAction('show-types-list');
+      dispatchResult(sampleTypes);
+      const input2 = document.querySelector('#cplace-types-list-dialog .cplace-tl-input');
+      input2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', altKey: true, bubbles: true }));
+      expect(hrefSpy).toHaveBeenLastCalledWith('https://x.example/acme/typeDefinitions/uid-1/TypeA');
+      mod.revert();
+    });
+  });
+
+  describe('options & footer', () => {
+    it('declares default modifier options', async () => {
+      const { mod } = await loadMod();
+      expect(mod.defaultOptions).toEqual({ secondaryModifier: 'alt', newTabModifier: 'shift' });
+    });
+
+    it('exposes a custom options editor', async () => {
+      const { mod } = await loadMod();
+      expect(typeof mod.renderOptions).toBe('function');
+    });
+
+    it('footer includes a new-tab hint', async () => {
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-types-list');
+      const foot = document.querySelector('#cplace-types-list-dialog .cplace-tl-foot');
+      expect(foot.textContent).toContain('new tab');
+      expect(foot.textContent).toContain('attributes');
+      mod.revert();
+    });
   });
 });

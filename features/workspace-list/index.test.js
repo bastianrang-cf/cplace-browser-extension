@@ -285,5 +285,86 @@ describe('workspace-list module', () => {
       expect(hrefSpy).toHaveBeenCalledWith('https://x.example/acme/space/uid-2');
       mod.revert();
     });
+
+    it('Shift+Enter opens the root page in a new tab (default new-tab modifier)', async () => {
+      const hrefSpy = vi.spyOn(window.location, 'href', 'set').mockImplementation(() => {});
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-workspace-list');
+      dispatchResult(sampleWorkspaces);
+
+      const input = document.querySelector('#cplace-workspace-list-dialog .cplace-wl-input');
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://x.example/acme/space/uid-1',
+        '_blank',
+        'noopener,noreferrer',
+      );
+      expect(hrefSpy).not.toHaveBeenCalled();
+      mod.revert();
+    });
+
+    it('Alt+Shift+Enter opens the Datamodel/Types page in a new tab', async () => {
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-workspace-list');
+      dispatchResult(sampleWorkspaces);
+
+      const input = document.querySelector('#cplace-workspace-list-dialog .cplace-wl-input');
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', altKey: true, shiftKey: true, bubbles: true }),
+      );
+
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://x.example/acme/typeDefinition/listAllTypes?spaceId=uid-1',
+        '_blank',
+        'noopener,noreferrer',
+      );
+      mod.revert();
+    });
+
+    it('honors a configured secondary modifier (Ctrl instead of Alt)', async () => {
+      const hrefSpy = vi.spyOn(window.location, 'href', 'set').mockImplementation(() => {});
+      const { mod } = await loadMod();
+      mod.apply({ secondaryModifier: 'ctrl', newTabModifier: 'shift' }, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-workspace-list');
+      dispatchResult(sampleWorkspaces);
+
+      const input = document.querySelector('#cplace-workspace-list-dialog .cplace-wl-input');
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+      expect(hrefSpy).toHaveBeenLastCalledWith('https://x.example/acme/typeDefinition/listAllTypes?spaceId=uid-1');
+
+      mod.onAction('show-workspace-list');
+      dispatchResult(sampleWorkspaces);
+      const input2 = document.querySelector('#cplace-workspace-list-dialog .cplace-wl-input');
+      input2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', altKey: true, bubbles: true }));
+      expect(hrefSpy).toHaveBeenLastCalledWith('https://x.example/acme/space/uid-1');
+      mod.revert();
+    });
+  });
+
+  describe('options & footer', () => {
+    it('declares default modifier options', async () => {
+      const { mod } = await loadMod();
+      expect(mod.defaultOptions).toEqual({ secondaryModifier: 'alt', newTabModifier: 'shift' });
+    });
+
+    it('exposes a custom options editor', async () => {
+      const { mod } = await loadMod();
+      expect(typeof mod.renderOptions).toBe('function');
+    });
+
+    it('footer includes a new-tab hint', async () => {
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-workspace-list');
+      const foot = document.querySelector('#cplace-workspace-list-dialog .cplace-wl-foot');
+      expect(foot.textContent).toContain('new tab');
+      expect(foot.textContent).toContain('types page');
+      mod.revert();
+    });
   });
 });

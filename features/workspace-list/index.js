@@ -1,7 +1,17 @@
+import { detectPlatform } from '../shortcuts.js';
+import {
+  normalizeNavModifiers,
+  modifierPressed,
+  modifierGlyph,
+  openTarget,
+  renderNavModifierOptions,
+} from '../nav-modifiers.js';
+
 const DIALOG_ID = 'cplace-workspace-list-dialog';
 
 let active = false;
 let currentContext = null;
+let currentOptions = normalizeNavModifiers({});
 let onResult = null;
 let onKey = null;
 let workspaces = null; // null = loading, [] = loaded-empty
@@ -27,11 +37,20 @@ function closeDialog() {
   document.getElementById(DIALOG_ID)?.remove();
 }
 
-function navigate(item, mode) {
+function navigate(item, { secondary, newTab }) {
   const baseUrl = currentContext?.baseUrl;
   if (!baseUrl) return;
+  const url = secondary ? typesUrl(baseUrl, item) : rootUrl(item);
   closeDialog();
-  window.location.href = mode === 'types' ? typesUrl(baseUrl, item) : rootUrl(item);
+  openTarget(url, newTab);
+}
+
+// Resolve the current modifier config into the navigate() flags for an event.
+function navTargetFor(event) {
+  return {
+    secondary: modifierPressed(event, currentOptions.secondaryModifier),
+    newTab: modifierPressed(event, currentOptions.newTabModifier),
+  };
 }
 
 function updateSelection(listEl) {
@@ -81,7 +100,7 @@ function renderList(listEl, query, error) {
       selectedIndex = idx;
       updateSelection(listEl);
     });
-    row.addEventListener('click', (e) => navigate(item, e.altKey ? 'types' : 'root'));
+    row.addEventListener('click', (e) => navigate(item, navTargetFor(e)));
 
     const name = document.createElement('div');
     name.className = 'cplace-wl-name';
@@ -120,11 +139,15 @@ function showDialog() {
   const list = document.createElement('div');
   list.className = 'cplace-wl-list';
 
+  const platform = detectPlatform();
+  const typesGlyph = modifierGlyph(currentOptions.secondaryModifier, platform);
+  const newTabGlyph = modifierGlyph(currentOptions.newTabModifier, platform);
   const foot = document.createElement('div');
   foot.className = 'cplace-wl-foot';
   foot.innerHTML =
     '<span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> root page</span>' +
-    '<span><kbd>Alt</kbd><kbd>↵</kbd> types page</span><span><kbd>Esc</kbd> close</span>';
+    `<span><kbd>${typesGlyph}</kbd><kbd>↵</kbd> types page</span>` +
+    `<span><kbd>${newTabGlyph}</kbd><kbd>↵</kbd> new tab</span><span><kbd>Esc</kbd> close</span>`;
 
   panel.append(input, list, foot);
   backdrop.appendChild(panel);
@@ -150,7 +173,7 @@ function showDialog() {
       updateSelection(list);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filtered[selectedIndex]) navigate(filtered[selectedIndex], e.altKey ? 'types' : 'root');
+      if (filtered[selectedIndex]) navigate(filtered[selectedIndex], navTargetFor(e));
     }
   });
 }
@@ -159,13 +182,21 @@ export default {
   id: 'workspace-list',
   name: 'Workspace List',
   description:
-    'Adds a "Workspace List" popup action (with keyboard shortcut) that opens a searchable dialog of every workspace in the current cplace tenant — press Enter for the workspace\'s root page, Alt+Enter for its Datamodel/Types page.',
+    'Adds a "Workspace List" popup action (with keyboard shortcut) that opens a searchable dialog of every workspace in the current cplace tenant — press Enter for the workspace\'s root page, hold the configured modifier for its Datamodel/Types page, or the new-tab modifier (default Shift) to open in a new tab.',
   defaultEnabled: false,
   css: true,
   pageScript: true,
   actions: [{ id: 'show-workspace-list', label: 'Workspace List', icon: '🏢' }],
-  apply(_options = {}, context = null) {
+  defaultOptions: { secondaryModifier: 'alt', newTabModifier: 'shift' },
+  renderOptions(container, ctx) {
+    renderNavModifierOptions(container, ctx, {
+      secondaryLabel: 'Modifier for the Datamodel/Types page',
+      newTabLabel: 'Modifier to open in a new browser tab',
+    });
+  },
+  apply(options = {}, context = null) {
     currentContext = context;
+    currentOptions = normalizeNavModifiers(options);
     if (active) return;
     active = true;
     onResult = (event) => {
@@ -191,6 +222,7 @@ export default {
     onKey = null;
     active = false;
     currentContext = null;
+    currentOptions = normalizeNavModifiers({});
     workspaces = null;
     filtered = [];
     selectedIndex = 0;
