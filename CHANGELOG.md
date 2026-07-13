@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.6.0...v1.6.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* open jump-dialog targets in a new tab instead of a new window ([#170](https://github.com/bastianrang-cf/cplace-browser-extension/issues/170)) ([322986b](https://github.com/bastianrang-cf/cplace-browser-extension/commit/322986b227bbc5807bfb993c145c88790a4e8593))
+
 ## [1.6.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.5.0...v1.6.0) (2026-07-13)
 
 
