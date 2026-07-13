@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.5.0...v1.6.0) (2026-07-13)
+
+
+### Features
+
+* **types-list,workspace-list:** configurable jump modifiers + open in new tab ([#168](https://github.com/bastianrang-cf/cplace-browser-extension/issues/168)) ([247a62b](https://github.com/bastianrang-cf/cplace-browser-extension/commit/247a62b15752ffb6717f8f1698f698331ce7e03c))
+
 ## [1.5.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.4.1...v1.5.0) (2026-07-13)
 
 
