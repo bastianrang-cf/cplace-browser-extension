@@ -176,7 +176,6 @@ describe('nav-links onAction', () => {
     expect(openSpy).toHaveBeenCalledWith(
       'https://demo.cplace.cloud/tenant/batchJob/jobs',
       '_blank',
-      'noopener,noreferrer',
     );
   });
 

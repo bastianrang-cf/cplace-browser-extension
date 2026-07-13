@@ -40,6 +40,19 @@ export function modifierPressed(event, modifier) {
   }
 }
 
+// Resolve a keyboard/mouse event into the two navigation flags the jump dialogs
+// need, given their stored { secondaryModifier, newTabModifier } options:
+//   secondary — the secondary-page modifier was held (attributes / Datamodel)
+//   newTab    — the new-tab modifier was held
+// The two are independent, so holding a key bound to both sets both flags.
+export function resolveNavTarget(event, options) {
+  const { secondaryModifier, newTabModifier } = normalizeNavModifiers(options);
+  return {
+    secondary: modifierPressed(event, secondaryModifier),
+    newTab: modifierPressed(event, newTabModifier),
+  };
+}
+
 // Full, platform-correct label for the options dropdown.
 export function modifierLabel(modifier, platform = detectPlatform()) {
   const mac = platform === 'mac';
@@ -67,10 +80,14 @@ export function modifierGlyph(modifier, platform = detectPlatform()) {
 // Open a resolved URL in a new tab or the current one. Content scripts can't use
 // browser.tabs.create, so the new-tab path uses a user-gesture window.open
 // (mirrors features/nav-links/index.js).
+//
+// No windowFeatures string is passed: a non-empty one (e.g. 'noopener,noreferrer')
+// trips Chrome's popup-window heuristic and opens a separate browser *window*
+// instead of a tab. Omitting it opens a real tab, respecting the user's settings.
 export function openTarget(url, newTab) {
   if (newTab) {
     try {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(url, '_blank');
     } catch (_) {
       // popup blocked or no window — nothing to recover
     }

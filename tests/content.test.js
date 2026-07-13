@@ -396,7 +396,7 @@ describe('content — keyboard shortcuts', () => {
     const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
     pressCtrl('KeyB');
 
-    expect(openSpy).toHaveBeenCalledWith(`${baseUrl}/batchJob/jobs`, '_blank', 'noopener,noreferrer');
+    expect(openSpy).toHaveBeenCalledWith(`${baseUrl}/batchJob/jobs`, '_blank');
     openSpy.mockRestore();
   });
 

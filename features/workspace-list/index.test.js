@@ -300,7 +300,6 @@ describe('workspace-list module', () => {
       expect(openSpy).toHaveBeenCalledWith(
         'https://x.example/acme/space/uid-1',
         '_blank',
-        'noopener,noreferrer',
       );
       expect(hrefSpy).not.toHaveBeenCalled();
       mod.revert();
@@ -321,7 +320,6 @@ describe('workspace-list module', () => {
       expect(openSpy).toHaveBeenCalledWith(
         'https://x.example/acme/typeDefinition/listAllTypes?spaceId=uid-1',
         '_blank',
-        'noopener,noreferrer',
       );
       mod.revert();
     });
