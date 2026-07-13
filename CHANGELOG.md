@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.4.0...v1.4.1) (2026-07-13)
+
+
+### Bug Fixes
+
+* Add activeTab parameter to API URL ([#160](https://github.com/bastianrang-cf/cplace-browser-extension/issues/160)) ([f41bb92](https://github.com/bastianrang-cf/cplace-browser-extension/commit/f41bb92be1a77cfa812cdc6f3adb24442a621731))
+
 ## [1.4.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.3.4...v1.4.0) (2026-07-09)
 
 
