@@ -7,8 +7,16 @@ beforeEach(() => {
 
 async function loadMod() {
   vi.resetModules();
-  const { default: mod, definitionUrl, attributesUrl, parseCurrentTypeUid, matchesQuery } = await import('./index.js');
-  return { mod, definitionUrl, attributesUrl, parseCurrentTypeUid, matchesQuery };
+  const { default: mod, definitionUrl, attributesUrl, parseCurrentTypeUid, parseCurrentTypeInternalName, matchesQuery } =
+    await import('./index.js');
+  return { mod, definitionUrl, attributesUrl, parseCurrentTypeUid, parseCurrentTypeInternalName, matchesQuery };
+}
+
+function setCplaceRoot(internalName) {
+  const el = document.createElement('div');
+  el.id = 'cplace';
+  if (internalName !== undefined) el.setAttribute('data-type-internal-name', internalName);
+  document.body.appendChild(el);
 }
 
 const sampleTypes = [
@@ -71,6 +79,23 @@ describe('types-list pure helpers', () => {
   it('parseCurrentTypeUid returns null on an unrelated page', async () => {
     const { parseCurrentTypeUid } = await loadMod();
     expect(parseCurrentTypeUid('/acme/pages/somePage', '')).toBeNull();
+  });
+
+  it('parseCurrentTypeInternalName reads data-type-internal-name off #cplace', async () => {
+    const { parseCurrentTypeInternalName } = await loadMod();
+    setCplaceRoot('cf.projectNavigator.project');
+    expect(parseCurrentTypeInternalName(document)).toBe('cf.projectNavigator.project');
+  });
+
+  it('parseCurrentTypeInternalName returns null when #cplace is absent', async () => {
+    const { parseCurrentTypeInternalName } = await loadMod();
+    expect(parseCurrentTypeInternalName(document)).toBeNull();
+  });
+
+  it('parseCurrentTypeInternalName treats the "-" sentinel as no type', async () => {
+    const { parseCurrentTypeInternalName } = await loadMod();
+    setCplaceRoot('-');
+    expect(parseCurrentTypeInternalName(document)).toBeNull();
   });
 });
 
@@ -216,6 +241,31 @@ describe('types-list module', () => {
 
     it('preselects the current page\'s type when the search box is empty', async () => {
       window.history.pushState(null, '', '/acme/typeDefinitions/uid-2/TypeB');
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-types-list');
+      dispatchResult(sampleTypes);
+
+      const selected = document.querySelector('#cplace-types-list-dialog .cplace-tl-item.sel');
+      expect(selected.querySelector('.cplace-tl-name').textContent).toBe('Type B');
+      mod.revert();
+    });
+
+    it("preselects the current type by #cplace data-type-internal-name on a normal page", async () => {
+      setCplaceRoot('AnotherType');
+      const { mod } = await loadMod();
+      mod.apply({}, { baseUrl: 'https://x.example/acme' });
+      mod.onAction('show-types-list');
+      dispatchResult(sampleTypes);
+
+      const selected = document.querySelector('#cplace-types-list-dialog .cplace-tl-item.sel');
+      expect(selected.querySelector('.cplace-tl-name').textContent).toBe('Zeta Type');
+      mod.revert();
+    });
+
+    it('prefers the URL uid over the #cplace internal name when both are present', async () => {
+      window.history.pushState(null, '', '/acme/typeDefinitions/uid-2/TypeB');
+      setCplaceRoot('AnotherType');
       const { mod } = await loadMod();
       mod.apply({}, { baseUrl: 'https://x.example/acme' });
       mod.onAction('show-types-list');

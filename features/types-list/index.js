@@ -8,6 +8,7 @@ let types = null; // null = loading, [] = loaded-empty
 let filtered = [];
 let selectedIndex = 0;
 let currentUidHint = null;
+let currentInternalNameHint = null;
 
 // Extract the uid of the type the current page belongs to, so the dialog can
 // preselect it. Matches both the definition page (/typeDefinitions/<uid>/<name>)
@@ -20,6 +21,14 @@ export function parseCurrentTypeUid(pathname, search) {
     if (id) return decodeURIComponent(id);
   }
   return null;
+}
+
+// On a normal content page the type is not in the URL — cplace exposes it as
+// data-type-internal-name on the #cplace root element (e.g. "cf.projectNavigator.project").
+// Returns null when the attribute is missing or set to the "-" empty sentinel.
+export function parseCurrentTypeInternalName(doc = document) {
+  const value = doc?.getElementById?.('cplace')?.getAttribute('data-type-internal-name');
+  return value && value !== '-' ? value : null;
 }
 
 export function definitionUrl(baseUrl, item) {
@@ -77,10 +86,13 @@ function renderList(listEl, query, error) {
     return;
   }
 
-  if (!q && currentUidHint) {
-    const idx = filtered.findIndex((t) => t.uid === currentUidHint);
-    if (idx >= 0) selectedIndex = idx;
-    else selectedIndex = 0;
+  if (!q && (currentUidHint || currentInternalNameHint)) {
+    let idx = -1;
+    if (currentUidHint) idx = filtered.findIndex((t) => t.uid === currentUidHint);
+    if (idx < 0 && currentInternalNameHint) {
+      idx = filtered.findIndex((t) => t.internalName === currentInternalNameHint);
+    }
+    selectedIndex = idx >= 0 ? idx : 0;
   } else if (selectedIndex >= filtered.length) {
     selectedIndex = 0;
   }
@@ -148,6 +160,7 @@ function showDialog() {
 
   selectedIndex = 0;
   currentUidHint = parseCurrentTypeUid(window.location.pathname, window.location.search);
+  currentInternalNameHint = parseCurrentTypeInternalName(document);
   renderList(list, '');
   requestAnimationFrame(() => input.focus());
 
@@ -210,6 +223,7 @@ export default {
     filtered = [];
     selectedIndex = 0;
     currentUidHint = null;
+    currentInternalNameHint = null;
     closeDialog();
   },
   onVersionDetected(context) {
