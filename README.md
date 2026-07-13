@@ -24,6 +24,7 @@ A Chrome / Edge / Firefox / Opera extension for [cplace](https://cplace.com) sol
 | Show system version as badge | on | Displays the detected cplace version number as a badge on the toolbar icon |
 | System Information | off | Adds a "System Info" popup button that fetches the tenant's system info and shows it in a dialog |
 | Types List | off | Adds a "Types List" popup action (with keyboard shortcut) that opens a searchable dialog of every custom type in the current workspace — Enter opens the type's definition page, Alt+Enter its attributes page |
+| Workspace List | off | Adds a "Workspace List" popup action (with keyboard shortcut) that opens a searchable dialog of every workspace in the current tenant — Enter opens the workspace's root page, Alt+Enter its Datamodel/Types page |
 
 Enable or disable modules on the **Options** page (`chrome://extensions` → cplace → Details → Extension options).
 
