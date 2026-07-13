@@ -7,6 +7,7 @@ import {
   modifierLabel,
   modifierGlyph,
   openTarget,
+  resolveNavTarget,
   renderNavModifierOptions,
 } from './nav-modifiers.js';
 
@@ -84,6 +85,34 @@ describe('modifierGlyph', () => {
   });
 });
 
+describe('resolveNavTarget', () => {
+  const options = { secondaryModifier: 'alt', newTabModifier: 'shift' };
+
+  it('flags secondary and newTab independently from the held keys', () => {
+    expect(resolveNavTarget({ altKey: true }, options)).toEqual({ secondary: true, newTab: false });
+    expect(resolveNavTarget({ shiftKey: true }, options)).toEqual({ secondary: false, newTab: true });
+    expect(resolveNavTarget({ altKey: true, shiftKey: true }, options)).toEqual({
+      secondary: true,
+      newTab: true,
+    });
+    expect(resolveNavTarget({}, options)).toEqual({ secondary: false, newTab: false });
+  });
+
+  it('normalizes missing/invalid options to the defaults', () => {
+    // Defaults: secondary → alt, newTab → shift.
+    expect(resolveNavTarget({ altKey: true }, undefined)).toEqual({ secondary: true, newTab: false });
+    expect(resolveNavTarget({ shiftKey: true }, { secondaryModifier: 'bogus' })).toEqual({
+      secondary: false,
+      newTab: true,
+    });
+  });
+
+  it('sets both flags when one key is bound to both actions', () => {
+    const shared = { secondaryModifier: 'ctrl', newTabModifier: 'ctrl' };
+    expect(resolveNavTarget({ ctrlKey: true }, shared)).toEqual({ secondary: true, newTab: true });
+  });
+});
+
 describe('openTarget', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -101,7 +130,7 @@ describe('openTarget', () => {
     const hrefSpy = vi.spyOn(window.location, 'href', 'set').mockImplementation(() => {});
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     openTarget('https://x.example/acme/page', true);
-    expect(openSpy).toHaveBeenCalledWith('https://x.example/acme/page', '_blank', 'noopener,noreferrer');
+    expect(openSpy).toHaveBeenCalledWith('https://x.example/acme/page', '_blank');
     expect(hrefSpy).not.toHaveBeenCalled();
   });
 });

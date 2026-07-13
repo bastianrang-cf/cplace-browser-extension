@@ -1,6 +1,7 @@
 import { moduleShortcutsItem } from '../storage.js';
 import { createShortcutRecorder } from '../shortcut-recorder.js';
 import { combosEqual, detectPlatform } from '../shortcuts.js';
+import { openTarget } from '../nav-modifiers.js';
 
 const navLinks = [
   { label: 'All Workspaces',     path: '/space/allSpaces' },
@@ -59,17 +60,12 @@ export function resolveLinks(options = {}) {
 // Keyboard-shortcut dispatch target. The shared content-script listener calls
 // onAction(commandId, context) for active modules; here the command id is a
 // link path, so pressing a bound shortcut opens baseUrl + path in a new tab —
-// identical to clicking the link in the popup. Content scripts can't use
-// browser.tabs.create, so this uses a user-gesture window.open.
+// identical to clicking the link in the popup.
 function onAction(path, context) {
   if (!isValidNavPath(path)) return;
   const baseUrl = context?.baseUrl;
   if (!baseUrl) return;
-  try {
-    window.open(baseUrl + path.trim(), '_blank', 'noopener,noreferrer');
-  } catch (_) {
-    // popup blocked or no window — nothing to recover
-  }
+  openTarget(baseUrl + path.trim(), true);
 }
 
 function renderOptions(container, ctx) {

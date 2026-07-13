@@ -375,7 +375,6 @@ describe('types-list module', () => {
       expect(openSpy).toHaveBeenCalledWith(
         'https://x.example/acme/typeDefinitions/uid-1/TypeA',
         '_blank',
-        'noopener,noreferrer',
       );
       expect(hrefSpy).not.toHaveBeenCalled();
       mod.revert();
@@ -396,7 +395,6 @@ describe('types-list module', () => {
       expect(openSpy).toHaveBeenCalledWith(
         'https://x.example/acme/typeDefinition/attributes?id=uid-1',
         '_blank',
-        'noopener,noreferrer',
       );
       mod.revert();
     });

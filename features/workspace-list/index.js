@@ -1,9 +1,9 @@
 import { detectPlatform } from '../shortcuts.js';
 import {
   normalizeNavModifiers,
-  modifierPressed,
   modifierGlyph,
   openTarget,
+  resolveNavTarget,
   renderNavModifierOptions,
 } from '../nav-modifiers.js';
 
@@ -43,14 +43,6 @@ function navigate(item, { secondary, newTab }) {
   const url = secondary ? typesUrl(baseUrl, item) : rootUrl(item);
   closeDialog();
   openTarget(url, newTab);
-}
-
-// Resolve the current modifier config into the navigate() flags for an event.
-function navTargetFor(event) {
-  return {
-    secondary: modifierPressed(event, currentOptions.secondaryModifier),
-    newTab: modifierPressed(event, currentOptions.newTabModifier),
-  };
 }
 
 function updateSelection(listEl) {
@@ -100,7 +92,7 @@ function renderList(listEl, query, error) {
       selectedIndex = idx;
       updateSelection(listEl);
     });
-    row.addEventListener('click', (e) => navigate(item, navTargetFor(e)));
+    row.addEventListener('click', (e) => navigate(item, resolveNavTarget(e, currentOptions)));
 
     const name = document.createElement('div');
     name.className = 'cplace-wl-name';
@@ -173,7 +165,7 @@ function showDialog() {
       updateSelection(list);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filtered[selectedIndex]) navigate(filtered[selectedIndex], navTargetFor(e));
+      if (filtered[selectedIndex]) navigate(filtered[selectedIndex], resolveNavTarget(e, currentOptions));
     }
   });
 }
