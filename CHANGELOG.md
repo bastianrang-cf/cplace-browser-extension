@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.4.1...v1.5.0) (2026-07-13)
+
+
+### Features
+
+* **workspace-list:** add searchable workspace list popup dialog ([#154](https://github.com/bastianrang-cf/cplace-browser-extension/issues/154)) ([#163](https://github.com/bastianrang-cf/cplace-browser-extension/issues/163)) ([59de154](https://github.com/bastianrang-cf/cplace-browser-extension/commit/59de154f178e32407a0e8ab7ce829ee9f4d181f3))
+
+
+### Bug Fixes
+
+* **types-list:** preselect current type on normal pages via #cplace data attribute ([#165](https://github.com/bastianrang-cf/cplace-browser-extension/issues/165)) ([7e7ce21](https://github.com/bastianrang-cf/cplace-browser-extension/commit/7e7ce211ead06910833c1dbfc84bc9ed40d55708))
+
 ## [1.4.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.4.0...v1.4.1) (2026-07-13)
 
 
