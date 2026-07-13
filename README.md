@@ -6,7 +6,7 @@
 [![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/aoeebikkhdfloboepjfbjlacpmhmkpeh)](https://chromewebstore.google.com/detail/cplace-browser-extension/aoeebikkhdfloboepjfbjlacpmhmkpeh)
 
 
-A Chrome / Edge / Firefox extension for [cplace](https://cplace.com) solutions - not officially supported by [cplace](https://www.cplace.com/).
+A Chrome / Edge / Firefox / Opera extension for [cplace](https://cplace.com) solutions - not officially supported by [cplace](https://www.cplace.com/).
 
 **Core behavior:** detects whether the current page is a cplace application (by the presence of `id="cplace"` in the DOM) and enables the toolbar icon on cplace pages (disabling/greying it out on all other pages). Optional behaviors are implemented as toggleable **modules**.
 
@@ -88,10 +88,12 @@ Install directly from the [Chrome Web Store](https://chromewebstore.google.com/d
 ### :wrench: Install in 1 Minute (zip from Release)
 
 1. Download the latest `.zip` for your browser from the [Releases page](https://github.com/bastianrang-cf/cplace-browser-extension/releases).
-2. Open your browser's extension page — `chrome://extensions/` in Chrome, `edge://extensions/` in Edge.
+2. Open your browser's extension page — `chrome://extensions/` in Chrome, `edge://extensions/` in Edge, `opera://extensions/` in Opera.
 3. Enable **Developer mode**.
 4. Drag and drop the downloaded `.zip` file onto the extensions page.
 5. Open the extension **Options** to enable the features you want.
+
+> **Opera** is Chromium-based, so the extension runs unchanged there. Use the dedicated `*-opera.zip` from the Releases page, or install the Chrome Web Store build via Opera's [Install Chrome Extensions](https://addons.opera.com/extensions/details/install-chrome-extensions/) add-on.
 
 ---
 
@@ -103,7 +105,7 @@ Install directly from the [Chrome Web Store](https://chromewebstore.google.com/d
 npm install            # install dev dependencies
 npm run dev            # dev build with HMR — load .output/chrome-mv3/ as unpacked
 npm run build          # production build
-npm run package        # zip for all targets (Chrome, Firefox, Safari)
+npm run package        # zip for all targets (Chrome, Firefox, Safari, Opera)
 npm test               # run the Vitest test suite
 npm run test:watch     # run tests in watch mode
 ```
@@ -161,7 +163,7 @@ A WXT build module at `modules/cplace-features.js` stages flattened, renamed fea
 
 ## Release pipeline
 
-Releases are driven by [release-please](https://github.com/googleapis/release-please). Commits to `main` must follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.). On merge of the release PR, GitHub Actions builds and uploads `.zip` files for Chrome, Firefox, and Safari to the GitHub Release.
+Releases are driven by [release-please](https://github.com/googleapis/release-please). Commits to `main` must follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.). On merge of the release PR, GitHub Actions builds and uploads `.zip` files for Chrome, Firefox, Safari, and Opera to the GitHub Release.
 
 ---
 
