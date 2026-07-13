@@ -70,6 +70,7 @@ describe('background — onInstalled', () => {
       'domain-css': false, 'batch-jobs': false, 'language-switcher': false,
       'low-code-logs': false,
       'nav-links': true, 'system-info': false, 'types-list': false, 'version-badge': true,
+      'workspace-list': false,
     };
     await fakeBrowser.storage.local.set({
       enabledModules: enabledKeys,
