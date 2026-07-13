@@ -91,7 +91,7 @@
       });
     }
 
-    var apiUrl = baseUrl + '/cplace-fe/cf.cplace.platform/data-modelling/types?spaceId=' + encodeURIComponent(spaceId);
+    var apiUrl = baseUrl + '/cplace-fe/cf.cplace.platform/data-modelling/types?spaceId=' + encodeURIComponent(spaceId) + '&activeTab=ATTRIBUTES';
     jQuery.ajax({
       url: apiUrl,
       type: 'GET',
