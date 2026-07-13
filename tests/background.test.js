@@ -82,6 +82,8 @@ describe('background — onInstalled', () => {
           minLevel: 'info', stickyOnError: true,
         },
         'nav-links': { disabledPaths: [], customLinks: [] },
+        'types-list': { secondaryModifier: 'alt', newTabModifier: 'shift' },
+        'workspace-list': { secondaryModifier: 'alt', newTabModifier: 'shift' },
       },
     });
     const setSpy = vi.spyOn(fakeBrowser.storage.local, 'set');

@@ -1,7 +1,17 @@
+import { detectPlatform } from '../shortcuts.js';
+import {
+  normalizeNavModifiers,
+  modifierPressed,
+  modifierGlyph,
+  openTarget,
+  renderNavModifierOptions,
+} from '../nav-modifiers.js';
+
 const DIALOG_ID = 'cplace-types-list-dialog';
 
 let active = false;
 let currentContext = null;
+let currentOptions = normalizeNavModifiers({});
 let onResult = null;
 let onKey = null;
 let types = null; // null = loading, [] = loaded-empty
@@ -48,11 +58,20 @@ function closeDialog() {
   document.getElementById(DIALOG_ID)?.remove();
 }
 
-function navigate(item, mode) {
+function navigate(item, { secondary, newTab }) {
   const baseUrl = currentContext?.baseUrl;
   if (!baseUrl) return;
+  const url = secondary ? attributesUrl(baseUrl, item) : definitionUrl(baseUrl, item);
   closeDialog();
-  window.location.href = mode === 'attributes' ? attributesUrl(baseUrl, item) : definitionUrl(baseUrl, item);
+  openTarget(url, newTab);
+}
+
+// Resolve the current modifier config into the navigate() flags for an event.
+function navTargetFor(event) {
+  return {
+    secondary: modifierPressed(event, currentOptions.secondaryModifier),
+    newTab: modifierPressed(event, currentOptions.newTabModifier),
+  };
 }
 
 function updateSelection(listEl) {
@@ -104,7 +123,7 @@ function renderList(listEl, query, error) {
       selectedIndex = idx;
       updateSelection(listEl);
     });
-    row.addEventListener('click', (e) => navigate(item, e.altKey ? 'attributes' : 'definition'));
+    row.addEventListener('click', (e) => navigate(item, navTargetFor(e)));
 
     const name = document.createElement('div');
     name.className = 'cplace-tl-name';
@@ -147,11 +166,15 @@ function showDialog() {
   const list = document.createElement('div');
   list.className = 'cplace-tl-list';
 
+  const platform = detectPlatform();
+  const attrGlyph = modifierGlyph(currentOptions.secondaryModifier, platform);
+  const newTabGlyph = modifierGlyph(currentOptions.newTabModifier, platform);
   const foot = document.createElement('div');
   foot.className = 'cplace-tl-foot';
   foot.innerHTML =
     '<span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> definition</span>' +
-    '<span><kbd>Alt</kbd><kbd>↵</kbd> attributes</span><span><kbd>Esc</kbd> close</span>';
+    `<span><kbd>${attrGlyph}</kbd><kbd>↵</kbd> attributes</span>` +
+    `<span><kbd>${newTabGlyph}</kbd><kbd>↵</kbd> new tab</span><span><kbd>Esc</kbd> close</span>`;
 
   panel.append(input, list, foot);
   backdrop.appendChild(panel);
@@ -179,7 +202,7 @@ function showDialog() {
       updateSelection(list);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filtered[selectedIndex]) navigate(filtered[selectedIndex], e.altKey ? 'attributes' : 'definition');
+      if (filtered[selectedIndex]) navigate(filtered[selectedIndex], navTargetFor(e));
     }
   });
 }
@@ -188,13 +211,21 @@ export default {
   id: 'types-list',
   name: 'Types List',
   description:
-    'Adds a "Types List" popup action (with keyboard shortcut) that opens a searchable dialog of every custom type in the current workspace — press Enter for the type definition page, Alt+Enter for its attributes page.',
+    'Adds a "Types List" popup action (with keyboard shortcut) that opens a searchable dialog of every custom type in the current workspace — press Enter for the type definition page, hold the configured modifier for its attributes page, or the new-tab modifier (default Shift) to open in a new tab.',
   defaultEnabled: false,
   css: true,
   pageScript: true,
   actions: [{ id: 'show-types-list', label: 'Types List', icon: '🗂️' }],
-  apply(_options = {}, context = null) {
+  defaultOptions: { secondaryModifier: 'alt', newTabModifier: 'shift' },
+  renderOptions(container, ctx) {
+    renderNavModifierOptions(container, ctx, {
+      secondaryLabel: 'Modifier for the attributes page',
+      newTabLabel: 'Modifier to open in a new browser tab',
+    });
+  },
+  apply(options = {}, context = null) {
     currentContext = context;
+    currentOptions = normalizeNavModifiers(options);
     if (active) return;
     active = true;
     onResult = (event) => {
@@ -219,6 +250,7 @@ export default {
     onKey = null;
     active = false;
     currentContext = null;
+    currentOptions = normalizeNavModifiers({});
     types = null;
     filtered = [];
     selectedIndex = 0;
