@@ -26,6 +26,46 @@ const sampleData = {
   fossPageUrl: '/training/application/administrationDashboard/viewLibraries/viewLibraries',
 };
 
+// cplace 26.3+ replaced the `name` field with `repoName` and added extra fields.
+const sampleData26_3 = {
+  mainBuildIdentifier: {
+    repoName: 'cplace',
+    release: '26.3',
+    version: '26.3.24',
+    buildIdentifier: '[cplace] 26.3_f0af0c4(release-version-26.3.24)_2026-07-27-043018',
+    branch: 'release-26.3',
+    frontendVersion: '26.3.24',
+    frontendBranch: 'release-version-26.3.24',
+    frontendBuildDate: '2026-07-27-043027',
+    frontendChangeSetId: 'f0af0c4',
+    changeSetId: 'f0af0c4(release-version-26.3.24)',
+    buildTime: '2026-07-27-043018',
+  },
+  buildIdentifiers: [
+    {
+      repoName: 'cplace',
+      release: '26.3',
+      version: '26.3.24',
+      buildIdentifier: '[cplace] 26.3_f0af0c4(release-version-26.3.24)_2026-07-27-043018',
+      branch: 'release-26.3',
+      changeSetId: 'f0af0c4(release-version-26.3.24)',
+      buildTime: '2026-07-27-043018',
+    },
+    {
+      repoName: 'cplace-workflow',
+      release: '26.3',
+      version: '26.3.1',
+      buildIdentifier: '[cplace-workflow] 26.3_cc29870(release-version-26.3.1)_2026-07-27-044041',
+      branch: 'release-26.3',
+      changeSetId: 'cc29870(release-version-26.3.1)',
+      buildTime: '2026-07-27-044041',
+    },
+  ],
+  mayViewAllSystemInfo: true,
+  systemStatusUrl: '/training/application/administrationDashboard/viewSystemStatus',
+  fossPageUrl: '/training/application/administrationDashboard/viewLibraries/viewLibraries',
+};
+
 describe('system-info module', () => {
   it('has correct id', async () => {
     const mod = await loadMod();
@@ -212,6 +252,31 @@ describe('system-info module', () => {
         detail: { data: { ...sampleData, mayViewAllSystemInfo: false }, error: null },
       }));
       expect(document.querySelector('#cplace-system-info-dialog .cplace-si-links')).toBeNull();
+      mod.revert();
+    });
+
+    it('falls back to repoName for the main build Name when cplace 26.3+ omits `name`', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
+        detail: { data: sampleData26_3, error: null },
+      }));
+      const dialog = document.getElementById('cplace-system-info-dialog');
+      expect(dialog).not.toBeNull();
+      expect(dialog.textContent).toContain('cplace');
+      mod.revert();
+    });
+
+    it('falls back to repoName in the build identifiers table when cplace 26.3+ omits `name`', async () => {
+      const mod = await loadMod();
+      mod.apply();
+      document.dispatchEvent(new CustomEvent('cplace:systemInfoResult', {
+        detail: { data: sampleData26_3, error: null },
+      }));
+      const rows = document.querySelectorAll('#cplace-system-info-dialog .cplace-si-table tbody tr');
+      expect(rows.length).toBe(sampleData26_3.buildIdentifiers.length);
+      expect(rows[0].textContent).toContain('cplace');
+      expect(rows[1].textContent).toContain('cplace-workflow');
       mod.revert();
     });
 
