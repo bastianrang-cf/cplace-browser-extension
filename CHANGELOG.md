@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.6.1...v1.6.2) (2026-07-28)
+
+
+### Bug Fixes
+
+* support cplace 26.3+ repoName in system-info build identifiers ([#176](https://github.com/bastianrang-cf/cplace-browser-extension/issues/176)) ([9a28799](https://github.com/bastianrang-cf/cplace-browser-extension/commit/9a2879990ffd23d0ba63962938a2acf861692fb5))
+
 ## [1.6.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.6.0...v1.6.1) (2026-07-13)
 
 
