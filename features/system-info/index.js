@@ -25,6 +25,10 @@ function formatChangeSet(raw) {
   return commit != null ? commit : '';
 }
 
+function getEntryName(entry) {
+  return entry?.name ?? entry?.repoName ?? null;
+}
+
 function releaseToKbUrl(release) {
   if (!release) return null;
   return `https://kb.cplace.com/release-information/readme/${String(release).replace(/\./g, '-')}`;
@@ -37,7 +41,7 @@ function buildIdentifierRow(b) {
     tr.className = 'cplace-si-row-warn';
   }
   for (const [key, text] of [
-    ['name', b.name != null ? String(b.name) : ''],
+    ['name', getEntryName(b) != null ? String(getEntryName(b)) : ''],
     ['changeSetId', formatChangeSet(b.changeSetId)],
     ['buildTime', formatBuildTime(b.buildTime) ?? ''],
   ]) {
@@ -62,7 +66,7 @@ function renderContent(data) {
   const dl = document.createElement('dl');
   dl.className = 'cplace-si-dl';
   for (const [label, value] of [
-    ['Name', main.name],
+    ['Name', getEntryName(main)],
     ['Release', main.release],
     ['Change set', formatChangeSet(main.changeSetId) || (main.changeSetId != null ? String(main.changeSetId) : null)],
     ['Build time', formatBuildTime(main.buildTime)],
