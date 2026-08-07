@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.6.2...v1.7.0) (2026-08-07)
+
+
+### Features
+
+* **low-code-logs:** mark toasts raised by the current user or workspace ([#184](https://github.com/bastianrang-cf/cplace-browser-extension/issues/184)) ([ba4d957](https://github.com/bastianrang-cf/cplace-browser-extension/commit/ba4d957602923e84d2541dc11e67fe85c2003228)), closes [#183](https://github.com/bastianrang-cf/cplace-browser-extension/issues/183)
+
 ## [1.6.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.6.1...v1.6.2) (2026-07-28)
 
 
