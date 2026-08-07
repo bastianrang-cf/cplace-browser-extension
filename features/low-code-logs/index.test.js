@@ -63,9 +63,10 @@ async function dispatchResult(detail) {
 }
 
 // page.js announces readiness via this event; firing it lets the gated
-// maybeStartPolling() proceed (page-world fetch listener is "live").
-function dispatchReady() {
-  document.dispatchEvent(new CustomEvent('cplace:lowCodeLogsPageReady'));
+// maybeStartPolling() proceed (page-world fetch listener is "live"). It also
+// carries a current-viewer identity snapshot (currentUserId/currentSpaceId).
+function dispatchReady(detail = {}) {
+  document.dispatchEvent(new CustomEvent('cplace:lowCodeLogsPageReady', { detail }));
 }
 
 describe('low-code-logs descriptor', () => {
@@ -404,6 +405,79 @@ describe('toast rendering', () => {
       total: 1,
     });
     expect(document.querySelector('.cplace-lcl-stack pre')?.textContent).toContain('RuntimeException');
+    mod.revert();
+  });
+});
+
+// Issue #183: flag a toast whose log metadata identifies the current viewer
+// (raised by them, or in their current workspace) with a symbol.
+describe('ownership marker', () => {
+  beforeEach(async () => {
+    await lowCodeLogsSeenItem.setValue({ [BASE_URL]: { ids: ['seed'], updatedAt: Date.now() } });
+  });
+
+  it('shows the 👤 badge when the entry was raised by the current user', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady({ currentUserId: 'u1', currentSpaceId: null });
+    await dispatchResult({ logs: [logEntry({ user: 'u1', spaceId: 'sOther' })], total: 1 });
+    const badge = document.querySelector('.cplace-lcl-owner-badge');
+    expect(badge?.textContent).toBe('👤');
+    expect(badge?.title).toBe('Raised by you');
+    mod.revert();
+  });
+
+  it('shows the 🏠 badge when the entry happened in the current workspace', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady({ currentUserId: null, currentSpaceId: 's1' });
+    await dispatchResult({ logs: [logEntry({ user: 'uOther', spaceId: 's1' })], total: 1 });
+    const badge = document.querySelector('.cplace-lcl-owner-badge');
+    expect(badge?.textContent).toBe('🏠');
+    expect(badge?.title).toBe('Raised in your current workspace');
+    mod.revert();
+  });
+
+  it('shows both symbols when both the user and workspace match', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady({ currentUserId: 'u1', currentSpaceId: 's1' });
+    await dispatchResult({ logs: [logEntry({ user: 'u1', spaceId: 's1' })], total: 1 });
+    const badge = document.querySelector('.cplace-lcl-owner-badge');
+    expect(badge?.textContent).toBe('👤🏠');
+    expect(badge?.title).toBe('Raised by you · Raised in your current workspace');
+    mod.revert();
+  });
+
+  it('shows no badge when neither the user nor workspace match', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady({ currentUserId: 'u1', currentSpaceId: 's1' });
+    await dispatchResult({ logs: [logEntry({ user: 'uOther', spaceId: 'sOther' })], total: 1 });
+    expect(document.querySelector('.cplace-lcl-owner-badge')).toBeNull();
+    mod.revert();
+  });
+
+  it('shows no badge when current-viewer identity is unknown', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady();
+    await dispatchResult({ logs: [logEntry({ user: 'u1', spaceId: 's1' })], total: 1 });
+    expect(document.querySelector('.cplace-lcl-owner-badge')).toBeNull();
+    mod.revert();
+  });
+
+  it('picks up identity carried by a poll result even when the ready event had none', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    dispatchReady(); // no identity yet
+    await dispatchResult({
+      logs: [logEntry({ user: 'u1', message: 'first' })],
+      total: 1,
+      currentUserId: 'u1',
+      currentSpaceId: null,
+    });
+    expect(document.querySelector('.cplace-lcl-owner-badge')?.textContent).toBe('👤');
     mod.revert();
   });
 });

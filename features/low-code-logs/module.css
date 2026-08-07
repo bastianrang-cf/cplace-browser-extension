@@ -89,6 +89,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+#cplace-low-code-logs-stack .cplace-lcl-owner-badge {
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+  cursor: default;
+}
 #cplace-low-code-logs-stack .cplace-lcl-filter-btn,
 #cplace-low-code-logs-stack .cplace-lcl-close-btn {
   background: none;

@@ -30,6 +30,8 @@ let autoDismissMs    = 8000;
 let minLevel         = 'info';
 let stickyOnError    = true;
 let currentContext   = null;
+let currentUserId    = null;
+let currentSpaceId   = null;
 let stackPosition    = { ...DEFAULT_POS };
 let activeToasts     = []; // [{ id, el, timer, level, entry }]
 let overflowQueue    = []; // entries that didn't fit, in arrival order
@@ -417,6 +419,33 @@ function openOverflowPanel() {
   stack.appendChild(panel);
 }
 
+// Flags a toast whose log metadata matches the current viewer — either the
+// user who raised it (👤) or the workspace it happened in (🏠) — so it's
+// easy to spot "this is about me / my current workspace" at a glance.
+export function buildOwnerBadge(entry) {
+  const info = entry.additionalInfo || {};
+  const isOwn = currentUserId != null && info.user === currentUserId;
+  const isCurrentWorkspace = currentSpaceId != null && info.spaceId === currentSpaceId;
+  if (!isOwn && !isCurrentWorkspace) return null;
+
+  const badge = document.createElement('span');
+  badge.className = 'cplace-lcl-owner-badge';
+  const symbols = [];
+  const titles = [];
+  if (isOwn) {
+    symbols.push('👤');
+    titles.push('Raised by you');
+  }
+  if (isCurrentWorkspace) {
+    symbols.push('🏠');
+    titles.push('Raised in your current workspace');
+  }
+  badge.textContent = symbols.join('');
+  badge.title = titles.join(' · ');
+  badge.setAttribute('aria-label', titles.join(' · '));
+  return badge;
+}
+
 function buildToast(entry, compact = false) {
   const toast = document.createElement('div');
   toast.className = `cplace-lcl-toast cplace-lcl-toast--${entry.type}`;
@@ -435,6 +464,9 @@ function buildToast(entry, compact = false) {
   ts.textContent = entry.timestamp || entry.type.toUpperCase();
   ts.title = entry.timestamp || '';
   header.appendChild(ts);
+
+  const ownerBadge = buildOwnerBadge(entry);
+  if (ownerBadge) header.appendChild(ownerBadge);
 
   const filterBtn = document.createElement('button');
   filterBtn.type = 'button';
@@ -597,12 +629,14 @@ function clearError() {
 }
 
 function onResult(event) {
-  const { logs = [], total = 0, error } = event.detail || {};
+  const { logs = [], total = 0, error, currentUserId: uid, currentSpaceId: sid } = event.detail || {};
   if (error) {
     renderError(error);
     return;
   }
   clearError();
+  if (uid !== undefined) currentUserId = uid;
+  if (sid !== undefined) currentSpaceId = sid;
   const baseUrl = currentContext?.baseUrl ?? null;
   if (!baseUrl) return;
   applyLogs(logs, total, baseUrl, /*fromCache*/ false);
@@ -801,8 +835,10 @@ export default {
     // The page-world script (page.js) dispatches this once it has registered its
     // fetch listener. Registered here synchronously, so it is in place before the
     // injected script executes in a later macrotask — the first fetch is never lost.
-    pageReadyHandler = () => {
+    pageReadyHandler = (event) => {
       pageReady = true;
+      currentUserId = event?.detail?.currentUserId ?? null;
+      currentSpaceId = event?.detail?.currentSpaceId ?? null;
       maybeStartPolling();
     };
     document.addEventListener('cplace:lowCodeLogsPageReady', pageReadyHandler);
@@ -851,6 +887,8 @@ export default {
     }
     clearStack();
     currentContext = null;
+    currentUserId = null;
+    currentSpaceId = null;
     stackPosition = { ...DEFAULT_POS };
   },
   async onAction(actionId, context) {
