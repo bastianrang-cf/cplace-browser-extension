@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import mod, { navLinks, isValidNavPath, sanitizeCustomLinks, resolveLinks } from './index.js';
 
 describe('nav-links module', () => {

@@ -1,5 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+
+// `wxt` is bundled as non-external for Vitest's SSR module graph, so
+// `vi.resetModules()` below also invalidates the `fakeBrowser` singleton —
+// each test needs a fresh re-import to match what `entrypoints/content.js`
+// sees. `@wxt-dev/storage` (a real, genuinely-external npm dependency used by
+// `wxt/utils/storage`) is *not* reset the same way: it reads the global
+// `browser`/`chrome` into a top-level `const` exactly once and never again,
+// so it would keep pointing at test #1's long-discarded instance forever.
+// Stub the globals to one stable wrapper object up front, and on each test
+// just copy the freshly-reset `fakeBrowser`'s APIs onto it — same object
+// identity for the whole file, fresh contents every test.
+const browserStub = {};
+vi.stubGlobal('browser', browserStub);
+vi.stubGlobal('chrome', browserStub);
+
+let fakeBrowser;
 
 async function loadContent() {
   const mod = await import('../entrypoints/content.js');
@@ -15,12 +30,19 @@ function setCplacePresent() {
 
 beforeEach(async () => {
   vi.useRealTimers();
+  vi.resetModules();
+  ({ fakeBrowser } = await import('wxt/testing/fake-browser'));
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.runtime, 'getURL').mockImplementation((p) => `chrome-extension://test/${p.replace(/^\//, '')}`);
   vi.spyOn(fakeBrowser.runtime, 'getManifest').mockReturnValue({ manifest_version: 3 });
-  vi.resetModules();
   document.documentElement.innerHTML = '<head></head><body></body>';
+
+  // Mirror the fully-mocked, freshly-reset instance's top-level APIs (by
+  // reference — this is a shallow copy) onto the stable wrapper so
+  // `@wxt-dev/storage`'s pinned `browser` sees the same `storage`/`runtime`
+  // objects `fakeBrowser` and `entrypoints/content.js` use below.
+  Object.assign(browserStub, fakeBrowser);
 });
 
 afterEach(() => {

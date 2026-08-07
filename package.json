@@ -14,12 +14,12 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@webext-core/fake-browser": "^1.5.0",
+    "@webext-core/fake-browser": "^2.0.1",
     "happy-dom": "^20.11.1",
     "jsdom": "^30.0.1",
     "sharp": "^0.35.3",
     "vitest": "^4.1.10",
-    "wxt": "^0.20.27"
+    "wxt": "^0.21.3"
   },
   "overrides": {
     "tmp": "^0.2.6",

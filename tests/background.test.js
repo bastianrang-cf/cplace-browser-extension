@@ -1,5 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+
+// `wxt` is bundled as non-external for Vitest's SSR module graph, so
+// `vi.resetModules()` below also invalidates the `fakeBrowser` singleton —
+// each test needs a fresh re-import to match what `entrypoints/background.js`
+// sees. `@wxt-dev/storage` (a real, genuinely-external npm dependency used by
+// `wxt/utils/storage`) is *not* reset the same way: it reads the global
+// `browser`/`chrome` into a top-level `const` exactly once and never again,
+// so it would keep pointing at test #1's long-discarded instance forever.
+// Stub the globals to one stable wrapper object up front, and on each test
+// just copy the freshly-reset `fakeBrowser`'s APIs onto it — same object
+// identity for the whole file, fresh contents every test.
+const browserStub = {};
+vi.stubGlobal('browser', browserStub);
+vi.stubGlobal('chrome', browserStub);
+
+let fakeBrowser;
 
 async function loadBackground() {
   const mod = await import('../entrypoints/background.js');
@@ -12,6 +27,8 @@ let permissionsContainsMock;
 let scriptingMocks;
 
 beforeEach(async () => {
+  vi.resetModules();
+  ({ fakeBrowser } = await import('wxt/testing/fake-browser'));
   fakeBrowser.reset();
   vi.spyOn(fakeBrowser.action, 'enable').mockResolvedValue(undefined);
   vi.spyOn(fakeBrowser.action, 'disable').mockResolvedValue(undefined);
@@ -39,7 +56,11 @@ beforeEach(async () => {
 
   fakeBrowser.runtime.openOptionsPage = vi.fn().mockResolvedValue(undefined);
 
-  vi.resetModules();
+  // Mirror the fully-mocked, freshly-reset instance's top-level APIs (by
+  // reference — this is a shallow copy) onto the stable wrapper so
+  // `@wxt-dev/storage`'s pinned `browser` sees the same `storage`/`runtime`
+  // objects `fakeBrowser` and `entrypoints/background.js` use below.
+  Object.assign(browserStub, fakeBrowser);
 });
 
 describe('background — onInstalled', () => {
