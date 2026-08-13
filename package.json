@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@webext-core/fake-browser": "^2.0.1",
-    "happy-dom": "^20.11.1",
+    "happy-dom": "^20.11.2",
     "jsdom": "^30.0.1",
     "sharp": "^0.35.3",
     "vitest": "^4.1.10",
