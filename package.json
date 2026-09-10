@@ -17,7 +17,7 @@
     "@webext-core/fake-browser": "^2.0.1",
     "happy-dom": "^20.14.0",
     "jsdom": "^30.0.1",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "vitest": "^5.0.0",
     "wxt": "^0.21.4"
   },
