@@ -89,7 +89,7 @@ describe('background — onInstalled', () => {
   it('does not call storage.set when all keys already exist', async () => {
     const enabledKeys = {
       'domain-css': false, 'batch-jobs': false, 'language-switcher': false,
-      'low-code-logs': false,
+      'low-code-logs': false, 'low-code-widget-edit': false,
       'nav-links': true, 'system-info': false, 'types-list': false, 'version-badge': true,
       'workspace-list': false,
     };
@@ -102,6 +102,7 @@ describe('background — onInstalled', () => {
           pollIntervalSec: 15, maxToasts: 3, autoDismissMs: 8000,
           minLevel: 'info', stickyOnError: true,
         },
+        'low-code-widget-edit': { adminOnly: true },
         'nav-links': { disabledPaths: [], customLinks: [] },
         'types-list': { secondaryModifier: 'alt', newTabModifier: 'shift' },
         'workspace-list': { secondaryModifier: 'alt', newTabModifier: 'shift' },
