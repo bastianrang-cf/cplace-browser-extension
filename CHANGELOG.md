@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.7.0...v1.8.0) (2026-09-24)
+
+
+### Features
+
+* **low-code-widget-edit:** edit button on embedded low-code widgets ([#198](https://github.com/bastianrang-cf/cplace-browser-extension/issues/198)) ([d1bb94e](https://github.com/bastianrang-cf/cplace-browser-extension/commit/d1bb94e6f2a52cc15c8b77b5589957549f8224f3))
+
 ## [1.7.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.6.2...v1.7.0) (2026-08-07)
 
 
