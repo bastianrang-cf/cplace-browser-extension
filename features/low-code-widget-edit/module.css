@@ -1,0 +1,46 @@
+/* Header mode: the link sits in .jarviswidget-ctrls and carries cplace's own
+   .button-icon class, so size, color and hover come from the instance theme. */
+.cplace-lcwe-btn {
+  text-decoration: none;
+}
+.cplace-lcwe-btn svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+.cplace-lcwe-btn.button-icon {
+  align-items: center;
+  justify-content: center;
+}
+
+/* Overlay mode: frameless widgets have no header, so float the link over the
+   top-right corner of the widget content. Faint until the widget is hovered. */
+.cplace-lcwe-host {
+  position: relative;
+}
+.cplace-lcwe-btn.cplace-lcwe-overlay {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid var(--widget-border-color, rgba(32, 34, 40, 0.15));
+  background: var(--surface-0, #fff);
+  color: var(--text-color, #202228);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  opacity: 0.45;
+  transition: opacity 0.15s ease-in-out;
+}
+.cplace-lcwe-host:hover > .cplace-lcwe-overlay,
+.cplace-lcwe-btn.cplace-lcwe-overlay:focus-visible {
+  opacity: 1;
+}
+.cplace-lcwe-btn.cplace-lcwe-overlay:hover {
+  color: var(--brand-primary, #1a4db8);
+}
