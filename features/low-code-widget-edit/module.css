@@ -8,7 +8,12 @@
   width: 12px;
   height: 12px;
 }
-.cplace-lcwe-btn.button-icon {
+/* cplace centers its own font glyphs via line-height/text-align, which doesn't
+   apply to a block svg, and some instances leave .button-icon at display:block,
+   so center it with flex. Anchored on the widget header to outrank cplace's
+   `.jarviswidget > header .jarviswidget-ctrls .button-icon`. */
+[data-widget-kind='cf.cplace.lowCodeWidgetBuilder.embeddedWidget'] > header a.cplace-lcwe-btn.button-icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
