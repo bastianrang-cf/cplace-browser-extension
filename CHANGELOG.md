@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.8.0...v1.8.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **low-code-widget-edit:** center edit button in widget header ([#200](https://github.com/bastianrang-cf/cplace-browser-extension/issues/200)) ([68f36e2](https://github.com/bastianrang-cf/cplace-browser-extension/commit/68f36e2abbe4178e8b4dae51d8a7c3066e67e65c))
+
 ## [1.8.0](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.7.0...v1.8.0) (2026-09-24)
 
 
