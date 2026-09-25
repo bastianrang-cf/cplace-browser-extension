@@ -16,11 +16,11 @@ A Chrome / Edge / Firefox / Opera extension for [cplace](https://cplace.com) sol
 
 | Module | Default | Description |
 |---|---|---|
+| AI Widget Studio edit button | off | Adds an edit button to embedded Low-Code Widget Builder widgets that opens the widget definition in a new tab — in the widget header when it is shown, otherwise as a small overlay on the widget content. By default only shown in workspaces where you are admin (toggle in the module options). |
 | Batch Jobs overlay | off | Shows a live overlay of running batch jobs on every cplace page, polling every 15 s while the tab is visible |
 | Domain CSS injection | off | Inject custom CSS on cplace pages matching a hostname/path glob — environment labels (DEV/TEST badges), admin-access highlighting, per-tenant visuals. Ships with a default admin-border rule. |
 | Language Switcher | off | Switch the cplace display language from the extension popup |
 | Low-Code Logs toasts | off | Toast notifications for new low-code log entries on cplace pages, with per-field include/exclude filters |
-| Low-Code Widget edit button | off | Adds an edit button to embedded Low-Code Widget Builder widgets that opens the widget definition in a new tab — in the widget header when it is shown, otherwise as a small overlay on the widget content. By default only shown in workspaces where you are admin (toggle in the module options). |
 | Navigation Links | on | Adds a popup submenu with quick links to common cplace pages (Workspaces, Packages, Batch Jobs, Low-Code Dashboard, Low-Code Logs, API Tokens, AI Settings, Deleted Items, Activity Stream, My Drafts). Each link can be individually toggled, you can add your own custom links (label + relative path), and any link — built-in or custom — can be bound to a keyboard shortcut that opens it on a cplace page. |
 | Show system version as badge | on | Displays the detected cplace version number as a badge on the toolbar icon |
 | System Information | off | Adds a "System Info" popup button that fetches the tenant's system info and shows it in a dialog |
@@ -34,7 +34,7 @@ Enable or disable modules on the **Options** page (`chrome://extensions` → cpl
 ## Snoozing modules during a presentation
 
 The popup has a **Snooze** menu for quickly silencing the page-modifying modules
-(**Batch Jobs overlay**, **Low-Code Logs toasts**, **Low-Code Widget edit button**,
+(**Batch Jobs overlay**, **Low-Code Logs toasts**, **AI Widget Studio edit button**,
 **Domain CSS injection**) on the
 tenant you're currently viewing — handy during a live demo or screen share.
 
@@ -57,7 +57,7 @@ you can trigger it directly on a cplace page without opening the popup:
 
 - **Modules with a popup action** (Language Switcher, System Information) bind the
   shortcut to that action — pressing it does exactly what clicking the popup button does.
-- **Snoozable modules** (Batch Jobs overlay, Low-Code Logs toasts, Low-Code Widget edit
+- **Snoozable modules** (Batch Jobs overlay, Low-Code Logs toasts, AI Widget Studio edit
   button, Domain CSS injection) bind the shortcut to **snooze / un-snooze** for the current tenant.
 - **Navigation Links** bind a shortcut **per link** (built-in or custom) — pressing it
   opens that link on the current cplace tenant in a new tab, just like clicking it in the

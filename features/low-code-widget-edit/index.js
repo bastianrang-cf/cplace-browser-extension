@@ -179,9 +179,9 @@ function cleanup() {
 
 export default {
   id: 'low-code-widget-edit',
-  name: 'Low-Code Widget edit button',
+  name: 'AI Widget Studio edit button',
   description:
-    'Adds an edit button to embedded Low-Code Widget Builder widgets that opens the widget definition in a new tab — in the widget header when it is shown, otherwise as a small overlay on the widget content. By default only shown in workspaces where you are admin.',
+    'Adds an edit button to embedded AI Widget Studio widgets that opens the widget definition in a new tab — in the widget header when it is shown, otherwise as a small overlay on the widget content. By default only shown in workspaces where you are admin.',
   defaultEnabled: false,
   snoozable: true,
   css: true,
