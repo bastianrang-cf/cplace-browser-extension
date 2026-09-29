@@ -59,7 +59,7 @@
         error: function (xhr, status, err) {
           var msg = xhr.status ? (xhr.status + ' ' + (err || status)) : (err || status || 'Network error');
           document.dispatchEvent(new CustomEvent('cplace:lowCodeLogsResult', {
-            detail: { error: msg, logs: [], total: 0 },
+            detail: { error: msg, status: xhr.status || 0, logs: [], total: 0 },
           }));
         },
       });

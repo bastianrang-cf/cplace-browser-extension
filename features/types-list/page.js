@@ -86,7 +86,9 @@
           emitResult(types, types.length ? null : 'No types found');
         },
         error: function (xhr, status, err) {
-          emitResult(null, 'HTTP ' + xhr.status + ' ' + (err || status));
+          emitResult(null, xhr.status === 403
+            ? 'Access denied (HTTP 403): you need workspace admin permission in this workspace to list its types.'
+            : 'HTTP ' + xhr.status + ' ' + (err || status));
         },
       });
     }

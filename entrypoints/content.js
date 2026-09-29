@@ -77,6 +77,21 @@ export default defineContentScript({
       scheduleSnoozeExpiry();
     }
 
+    // Snooze a module for the current tenant on request of the module itself
+    // (e.g. after a 403 because the user lacks permissions). No-op when the
+    // module is not snoozable or already snoozed/deactivated on this tenant.
+    function snoozeForTenant(moduleId) {
+      const baseUrl = lastContext?.baseUrl;
+      if (!baseUrl || !registry.byId(moduleId)?.snoozable) return;
+      if (snoozeState(moduleSnooze[baseUrl]?.[moduleId]) !== 'off') return;
+      toggleSnooze(moduleId);
+    }
+
+    document.addEventListener('cplace:requestSnooze', (event) => {
+      const id = event.detail?.id;
+      if (typeof id === 'string') snoozeForTenant(id);
+    });
+
     function notifyContextDetected(mod) {
       if (lastContext && typeof mod.onVersionDetected === 'function') {
         try { mod.onVersionDetected(lastContext); } catch (e) {

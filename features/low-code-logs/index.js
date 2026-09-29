@@ -629,7 +629,13 @@ function clearError() {
 }
 
 function onResult(event) {
-  const { logs = [], total = 0, error, currentUserId: uid, currentSpaceId: sid } = event.detail || {};
+  const { logs = [], total = 0, error, status, currentUserId: uid, currentSpaceId: sid } = event.detail || {};
+  if (status === 403) {
+    // The user lacks low-code permissions on this tenant: polling can never
+    // succeed, so snooze the module for the tenant instead of showing an error.
+    document.dispatchEvent(new CustomEvent('cplace:requestSnooze', { detail: { id: 'low-code-logs' } }));
+    return;
+  }
   if (error) {
     renderError(error);
     return;
