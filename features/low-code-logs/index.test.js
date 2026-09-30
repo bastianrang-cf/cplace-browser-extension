@@ -210,6 +210,29 @@ describe('apply()', () => {
   });
 });
 
+describe('403 handling', () => {
+  it('requests a tenant snooze instead of showing an error', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    const handler = vi.fn();
+    document.addEventListener('cplace:requestSnooze', handler);
+    await dispatchResult({ error: '403 Forbidden', status: 403, logs: [], total: 0 });
+    document.removeEventListener('cplace:requestSnooze', handler);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail).toEqual({ id: 'low-code-logs' });
+    expect(document.querySelector('.cplace-lcl-error')).toBeNull();
+    mod.revert();
+  });
+
+  it('still shows other errors', async () => {
+    const mod = await loadMod();
+    mod.apply({}, { baseUrl: BASE_URL });
+    await dispatchResult({ error: '500 Server Error', status: 500, logs: [], total: 0 });
+    expect(document.querySelector('.cplace-lcl-error')?.textContent).toContain('500');
+    mod.revert();
+  });
+});
+
 // Issue #109: on load the initial fetch must fire as soon as the page script is
 // ready AND a context with baseUrl is known; the interval is anchored to it.
 describe('eager initial fetch (issue #109)', () => {
