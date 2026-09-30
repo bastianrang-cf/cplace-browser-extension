@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.8.1...v1.8.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **low-code-logs,types-list:** handle 403 permission errors gracefully ([#202](https://github.com/bastianrang-cf/cplace-browser-extension/issues/202)) ([43f3f25](https://github.com/bastianrang-cf/cplace-browser-extension/commit/43f3f258c70a26716b403fe889c12aa888d70cb4))
+
 ## [1.8.1](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.8.0...v1.8.1) (2026-09-25)
 
 
