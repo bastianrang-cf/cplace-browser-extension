@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.3](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.8.2...v1.8.3) (2026-11-18)
+
+
+### Bug Fixes
+
+* modern web + MV3 hardening (IME-safe Enter, session-map race, activeTab removal) ([#218](https://github.com/bastianrang-cf/cplace-browser-extension/issues/218)) ([9694324](https://github.com/bastianrang-cf/cplace-browser-extension/commit/96943246c9847cbc30c6223357800743ee17c4b2))
+
 ## [1.8.2](https://github.com/bastianrang-cf/cplace-browser-extension/compare/v1.8.1...v1.8.2) (2026-09-30)
 
 
