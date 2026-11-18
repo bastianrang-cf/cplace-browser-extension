@@ -123,7 +123,7 @@ WXT generates `manifest.json` from `wxt.config.js` — do not create one manuall
 
 ### Core detection
 
-`entrypoints/content.js` checks for `#cplace` on page load and via a debounced `MutationObserver` (250 ms), so it works correctly on single-page applications. It messages `entrypoints/background.js`, which calls `browser.action.setIcon()` per-tab and shows/hides the popup accordingly. The same detection also **gates feature-module activation**: modules only run on cplace pages, and the core reverts them automatically if `#cplace` disappears.
+`entrypoints/content.js` checks for `#cplace` on page load and via a debounced `MutationObserver` (250 ms), so it works correctly on single-page applications. It messages `entrypoints/background.js`, which enables or disables the toolbar action per tab (`browser.action.enable()` / `disable()`) and binds the popup to that tab. The same detection also **gates feature-module activation**: modules only run on cplace pages, and the core reverts them automatically if `#cplace` disappears.
 
 ### Module system
 

@@ -268,7 +268,7 @@ function renderPanel(jobs, baseUrl = null) {
     document.body.appendChild(panel);
   }
 
-  panel.innerHTML = '';
+  panel.replaceChildren();
   applyPosition(panel);
 
   if (!expanded) {
@@ -401,7 +401,7 @@ function renderError(msg) {
     panel.id = PANEL_ID;
     document.body.appendChild(panel);
   }
-  panel.innerHTML = '';
+  panel.replaceChildren();
   const el = document.createElement('div');
   el.className = 'cplace-bj-error';
   el.textContent = '⚠ ' + msg;

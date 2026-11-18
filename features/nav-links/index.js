@@ -310,6 +310,8 @@ function renderOptions(container, ctx) {
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
+          // Enter also confirms an IME (CJK) composition — don't add mid-composition.
+          if (e.isComposing || e.keyCode === 229) return;
           tryAdd();
         }
       });

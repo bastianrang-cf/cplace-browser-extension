@@ -53,7 +53,7 @@ function updateSelection(listEl) {
 }
 
 function renderList(listEl, query, error) {
-  listEl.innerHTML = '';
+  listEl.replaceChildren();
 
   if (workspaces === null) {
     listEl.innerHTML = '<div class="cplace-wl-msg">Loading workspaces…</div>';

@@ -203,18 +203,23 @@ export default defineContentScript({
 
     // --- Module runtime ---
 
-    Promise.all([
-      enabledModulesItem.getValue(),
-      moduleOptionsItem.getValue(),
-      moduleSnoozeItem.getValue(),
-      moduleShortcutsItem.getValue(),
-    ]).then(([enabled, options, snooze, shortcuts]) => {
-      moduleOptions = options;
-      moduleSnooze = pruneSnooze(snooze || {});
-      moduleShortcuts = shortcuts || {};
-      applyAll(enabled);
-      scheduleSnoozeExpiry();
-    });
+    (async () => {
+      try {
+        const [enabled, options, snooze, shortcuts] = await Promise.all([
+          enabledModulesItem.getValue(),
+          moduleOptionsItem.getValue(),
+          moduleSnoozeItem.getValue(),
+          moduleShortcutsItem.getValue(),
+        ]);
+        moduleOptions = options;
+        moduleSnooze = pruneSnooze(snooze || {});
+        moduleShortcuts = shortcuts || {};
+        applyAll(enabled);
+        scheduleSnoozeExpiry();
+      } catch (e) {
+        console.warn('[cplace] module state load failed:', e);
+      }
+    })();
 
     // --- Keyboard shortcuts ---
     //
@@ -304,11 +309,15 @@ export default defineContentScript({
       }
       if (msg.type === 'cplace:moduleSnooze') {
         // Primary cross-window path: re-read the shared map and reconcile.
-        moduleSnoozeItem.getValue().then((v) => {
-          moduleSnooze = pruneSnooze(v || {});
-          reconcile();
-          scheduleSnoozeExpiry();
-        });
+        (async () => {
+          try {
+            moduleSnooze = pruneSnooze((await moduleSnoozeItem.getValue()) || {});
+            reconcile();
+            scheduleSnoozeExpiry();
+          } catch (e) {
+            console.warn('[cplace] snooze reload failed:', e);
+          }
+        })();
         return;
       }
     });
