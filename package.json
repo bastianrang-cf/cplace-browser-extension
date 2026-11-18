@@ -6,7 +6,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "predev": "npm run build:icons",
     "dev": "wxt",
+    "prebuild": "npm run build:icons",
     "build": "wxt build",
     "build:icons": "node scripts/build-icons.mjs",
     "package": "npm run build:icons && wxt zip && wxt zip -b firefox && wxt zip -b safari && wxt zip -b opera",
