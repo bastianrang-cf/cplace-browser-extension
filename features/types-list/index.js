@@ -74,7 +74,7 @@ function updateSelection(listEl) {
 }
 
 function renderList(listEl, query, error) {
-  listEl.innerHTML = '';
+  listEl.replaceChildren();
 
   if (types === null) {
     listEl.innerHTML = '<div class="cplace-tl-msg">Loading types…</div>';

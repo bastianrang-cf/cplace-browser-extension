@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Chrome/Edge Manifest V3 browser extension for cplace solutions. Core behavior: detects whether the current page contains an element with `id="cplace"` and swaps the toolbar icon between a colored "c" (detected) and greyscale (not detected). Optional behaviors are implemented as **feature modules** (under `features/`) that the user can toggle on the Options page.
+Chrome/Edge Manifest V3 browser extension for cplace solutions. Core behavior: detects whether the current page contains an element with `id="cplace"` and enables the toolbar action on cplace pages (disabled — shown greyed out by the browser — everywhere else). Optional behaviors are implemented as **feature modules** (under `features/`) that the user can toggle on the Options page.
 
 Built with **WXT** (Vite-based extension framework). Plain JS, no TypeScript.
 
@@ -12,9 +12,9 @@ Built with **WXT** (Vite-based extension framework). Plain JS, no TypeScript.
 
 ```bash
 npm install            # devDeps: wxt, vitest, sharp, etc.
-npm run build:icons    # regenerate public/icons/ PNGs from icons/source.svg
-npm run dev            # dev build with HMR — load .output/chrome-mv3/ as unpacked extension
-npm run build          # production build to .output/chrome-mv3/
+npm run build:icons    # regenerate public/icons/ PNGs from icons/source.svg (gitignored)
+npm run dev            # dev build with HMR — load .output/chrome-mv3/ as unpacked extension (runs build:icons first)
+npm run build          # production build to .output/chrome-mv3/ (runs build:icons first)
 npm run package        # build icons + wxt zip → .output/*.zip (used by release CI)
 npm test               # run vitest test suite
 npm run test:watch     # run vitest in watch mode
@@ -40,7 +40,7 @@ The motivation is Chrome Web Store review time: static `<all_urls>` triggers a h
 
 ### Core vs feature modules
 
-- **Core** (always on, once host access is granted): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background, and **gates feature-module activation on detection**. `entrypoints/background.js` calls `browser.action.setIcon({ tabId, path })` with per-tab color or grey icon set, and handles `cplace:domainCss:apply` / `:revert` messages via `browser.scripting.insertCSS` / `removeCSS` with per-tab state in `chrome.storage.session`.
+- **Core** (always on, once host access is granted): `entrypoints/content.js` detects `#cplace` (initial + debounced `MutationObserver`), messages the background, and **gates feature-module activation on detection**. `entrypoints/background.js` calls `browser.action.enable(tabId)` / `disable(tabId)` per tab (binding `popup.html?tabId=…` on detection), and handles `cplace:domainCss:apply` / `:revert` messages via `browser.scripting.insertCSS` / `removeCSS` with per-tab state in `chrome.storage.session`. All read-modify-write updates of those session maps go through `serializeSessionWrite()` so concurrent messages from different tabs can't drop each other's entries; per-tab `browser.action.*` calls are wrapped in `ignoreClosedTab()` because they reject once the tab is gone.
 - **Feature modules** (opt-in, in `features/`): each lives in `features/<id>/index.js` and exports a default descriptor `{ id, name, description, defaultEnabled, ...flags }`. `features/registry.js` auto-discovers all features and exposes `{ all(), byId(id), defaultEnabledMap() }`.
 
 > Naming: the root `modules/` directory is reserved by WXT for **build modules** (project-local Vite/WXT extensions). Domain feature toggles therefore live in `features/`. A WXT build module at `modules/cplace-features.js` is what wires per-feature assets into the build output.

@@ -617,4 +617,73 @@ describe('background — onMessage: domain-css', () => {
 
     expect(scriptingMocks.removeCSS).not.toHaveBeenCalled();
   });
+
+  it('keeps both tabs\' entries when two tabs apply CSS concurrently', async () => {
+    // Hold tab 55's insertCSS open so tab 66's apply arrives while 55 is mid-update.
+    // Without serialized writes, 55 would write back a stale map and drop 66's entry.
+    let releaseFirst;
+    scriptingMocks.insertCSS = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise((r) => { releaseFirst = r; }))
+      .mockResolvedValue(undefined);
+    scriptingMocks.removeCSS = vi.fn().mockResolvedValue(undefined);
+    // Real chrome.storage returns a fresh copy on every read; the fake hands out the
+    // stored object by reference, which would hide the lost-update race. Seed the map
+    // too: an absent key makes every reader share the item's single fallback object.
+    await fakeBrowser.storage.session.set({ domainCssByTab: { 1: 'seed {}' } });
+    const realGet = fakeBrowser.storage.session.get.bind(fakeBrowser.storage.session);
+    vi.spyOn(fakeBrowser.storage.session, 'get').mockImplementation(async (...args) =>
+      structuredClone(await realGet(...args)),
+    );
+    await loadBackground();
+
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'a {}' },
+      { tab: { id: 55 } },
+    );
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:domainCss:apply', css: 'b {}' },
+      { tab: { id: 66 } },
+    );
+    await vi.waitFor(() => expect(releaseFirst).toBeTypeOf('function'));
+    releaseFirst();
+    await vi.waitFor(() => expect(scriptingMocks.insertCSS).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 10));
+
+    await fakeBrowser.runtime.onMessage.trigger({ type: 'cplace:domainCss:revert' }, { tab: { id: 55 } });
+    await fakeBrowser.runtime.onMessage.trigger({ type: 'cplace:domainCss:revert' }, { tab: { id: 66 } });
+    await vi.waitFor(() => expect(scriptingMocks.removeCSS).toHaveBeenCalledTimes(2));
+
+    expect(scriptingMocks.removeCSS).toHaveBeenCalledWith({ target: { tabId: 55 }, css: 'a {}' });
+    expect(scriptingMocks.removeCSS).toHaveBeenCalledWith({ target: { tabId: 66 }, css: 'b {}' });
+  });
+});
+
+describe('background — action calls on closed tabs', () => {
+  it('attaches a rejection handler to every per-tab action call', async () => {
+    // A tab closed before the message is handled makes these calls reject with
+    // "No tab with id". Each returned promise must get a handler, or the service
+    // worker logs an unhandled rejection.
+    const rejected = [];
+    const closed = () => {
+      const p = Promise.reject(new Error('No tab with id: 77.'));
+      p.catch(() => {}); // keep the test run itself clean
+      rejected.push(vi.spyOn(p, 'catch'));
+      return p;
+    };
+    for (const name of ['enable', 'disable', 'setPopup', 'setBadgeText', 'setTitle', 'setBadgeBackgroundColor']) {
+      fakeBrowser.action[name].mockImplementation(closed);
+    }
+    await loadBackground();
+    await fakeBrowser.runtime.onMessage.trigger({ type: 'cplace:status', found: true }, { tab: { id: 77 } });
+    await fakeBrowser.runtime.onMessage.trigger({ type: 'cplace:status', found: false }, { tab: { id: 77 } });
+    await fakeBrowser.runtime.onMessage.trigger(
+      { type: 'cplace:setBadge', text: '3', color: '#f00', title: 'x' },
+      { tab: { id: 77 } },
+    );
+    await fakeBrowser.runtime.onMessage.trigger({ type: 'cplace:clearBadge' }, { tab: { id: 77 } });
+
+    expect(rejected).toHaveLength(10);
+    for (const catchSpy of rejected) expect(catchSpy).toHaveBeenCalled();
+  });
 });
