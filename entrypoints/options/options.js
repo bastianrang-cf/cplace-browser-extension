@@ -385,19 +385,22 @@ moduleShortcutsItem.watch((newValue) => {
   for (const refresh of shortcutRefreshers) refresh();
 });
 
-Promise.all([
-  enabledModulesItem.getValue(),
-  moduleOptionsItem.getValue(),
-  moduleShortcutsItem.getValue(),
-]).then(
-  async ([stored, savedOpts, shortcuts]) => {
-    liveShortcuts = shortcuts || {};
-    const defaults = registry.defaultEnabledMap();
-    const enabled = { ...defaults, ...stored };
-    render(enabled, savedOpts);
-    await refreshHostAccess();
-    // If permission is missing, default to the host-access section so it's the first thing the user sees.
-    const granted = await hasUniversalHostAccess();
-    if (!granted) setActiveSection(HOST_SECTION_ID);
-  },
-);
+async function init() {
+  const [stored, savedOpts, shortcuts] = await Promise.all([
+    enabledModulesItem.getValue(),
+    moduleOptionsItem.getValue(),
+    moduleShortcutsItem.getValue(),
+  ]);
+  liveShortcuts = shortcuts || {};
+  const defaults = registry.defaultEnabledMap();
+  const enabled = { ...defaults, ...stored };
+  render(enabled, savedOpts);
+  await refreshHostAccess();
+  // If permission is missing, default to the host-access section so it's the first thing the user sees.
+  const granted = await hasUniversalHostAccess();
+  if (!granted) setActiveSection(HOST_SECTION_ID);
+}
+
+init().catch((e) => {
+  console.error('[cplace] options page init failed:', e);
+});

@@ -5,6 +5,24 @@ import { hasUniversalHostAccess } from '../features/permissions.js';
 
 const CONTENT_SCRIPT_ID = 'cplace-content';
 
+// Per-tab action calls reject with "No tab with id" when the tab closed before the
+// message was handled. That's expected, so swallow it instead of surfacing an
+// unhandled rejection in the service worker console.
+function ignoreClosedTab(promise) {
+  return promise?.catch?.(() => {});
+}
+
+// The session-storage maps below are read-modified-written across awaits. Run every
+// such update through one queue so concurrent messages from different tabs can't
+// overwrite each other's entries. The queue only orders in-flight work; nothing in it
+// needs to survive a service-worker restart.
+let sessionWriteQueue = Promise.resolve();
+function serializeSessionWrite(fn) {
+  const run = sessionWriteQueue.then(fn);
+  sessionWriteQueue = run.catch(() => {});
+  return run;
+}
+
 async function ensureContentScriptRegistration() {
   const granted = await hasUniversalHostAccess();
   const existing = await browser.scripting
@@ -116,14 +134,14 @@ export default defineBackground(() => {
     if (msg.type === 'cplace:status' && sender.tab && sender.tab.id != null) {
       const tabId = sender.tab.id;
       if (msg.found) {
-        browser.action.enable(tabId);
+        ignoreClosedTab(browser.action.enable(tabId));
         // Bind this tab's id into the popup URL so the popup can address the right tab
         // without tabs.query (unreliable in Arc). baseUrl is appended via cplace:context.
-        browser.action.setPopup({ tabId, popup: `popup.html?tabId=${tabId}` });
+        ignoreClosedTab(browser.action.setPopup({ tabId, popup: `popup.html?tabId=${tabId}` }));
       } else {
-        browser.action.disable(tabId);
-        browser.action.setTitle({ tabId, title: 'cplace' });
-        browser.action.setBadgeText({ tabId, text: '' });
+        ignoreClosedTab(browser.action.disable(tabId));
+        ignoreClosedTab(browser.action.setTitle({ tabId, title: 'cplace' }));
+        ignoreClosedTab(browser.action.setBadgeText({ tabId, text: '' }));
       }
       return;
     }
@@ -140,16 +158,18 @@ export default defineBackground(() => {
 
     if (msg.type === 'cplace:setBadge' && sender.tab && sender.tab.id != null) {
       const tabId = sender.tab.id;
-      browser.action.setBadgeText({ tabId, text: msg.text || '' });
-      if (msg.color && msg.text) browser.action.setBadgeBackgroundColor({ tabId, color: msg.color });
-      if (msg.title) browser.action.setTitle({ tabId, title: msg.title });
+      ignoreClosedTab(browser.action.setBadgeText({ tabId, text: msg.text || '' }));
+      if (msg.color && msg.text) {
+        ignoreClosedTab(browser.action.setBadgeBackgroundColor({ tabId, color: msg.color }));
+      }
+      if (msg.title) ignoreClosedTab(browser.action.setTitle({ tabId, title: msg.title }));
       return;
     }
 
     if (msg.type === 'cplace:clearBadge' && sender.tab && sender.tab.id != null) {
       const tabId = sender.tab.id;
-      browser.action.setBadgeText({ tabId, text: '' });
-      browser.action.setTitle({ tabId, title: 'cplace' });
+      ignoreClosedTab(browser.action.setBadgeText({ tabId, text: '' }));
+      ignoreClosedTab(browser.action.setTitle({ tabId, title: 'cplace' }));
       return;
     }
 
@@ -158,11 +178,8 @@ export default defineBackground(() => {
       msg.type === 'cplace:moduleOptions' ||
       msg.type === 'cplace:moduleSnooze'
     ) {
-      browser.tabs.query({}).then((tabs) => {
-        for (const tab of tabs) {
-          if (tab.id == null) continue;
-          browser.tabs.sendMessage(tab.id, msg).catch(() => {});
-        }
+      broadcastToTabs(msg).catch((e) => {
+        console.warn('[cplace] broadcast to tabs failed:', e);
       });
       return;
     }
@@ -182,14 +199,28 @@ export default defineBackground(() => {
     }
   });
 
-  async function setTabBaseUrl(tabId, baseUrl) {
-    const map = await tabBaseUrlItem.getValue();
-    if (baseUrl) map[tabId] = baseUrl;
-    else delete map[tabId];
-    await tabBaseUrlItem.setValue(map);
+  async function broadcastToTabs(msg) {
+    const tabs = await browser.tabs.query({});
+    for (const tab of tabs) {
+      if (tab.id == null) continue;
+      browser.tabs.sendMessage(tab.id, msg).catch(() => {});
+    }
   }
 
-  async function applyDomainCss(tabId, css) {
+  function setTabBaseUrl(tabId, baseUrl) {
+    return serializeSessionWrite(async () => {
+      const map = await tabBaseUrlItem.getValue();
+      if (baseUrl) map[tabId] = baseUrl;
+      else delete map[tabId];
+      await tabBaseUrlItem.setValue(map);
+    });
+  }
+
+  function applyDomainCss(tabId, css) {
+    return serializeSessionWrite(() => applyDomainCssNow(tabId, css));
+  }
+
+  async function applyDomainCssNow(tabId, css) {
     const map = await domainCssByTabItem.getValue();
     const prev = map[tabId];
     if (prev) {
@@ -210,7 +241,11 @@ export default defineBackground(() => {
     await domainCssByTabItem.setValue(map);
   }
 
-  async function revertDomainCss(tabId) {
+  function revertDomainCss(tabId) {
+    return serializeSessionWrite(() => revertDomainCssNow(tabId));
+  }
+
+  async function revertDomainCssNow(tabId) {
     const map = await domainCssByTabItem.getValue();
     const prev = map[tabId];
     if (!prev) return;
@@ -219,16 +254,20 @@ export default defineBackground(() => {
     await domainCssByTabItem.setValue(map);
   }
 
-  browser.tabs.onRemoved.addListener(async (tabId) => {
-    const cssMap = await domainCssByTabItem.getValue();
-    if (tabId in cssMap) {
-      delete cssMap[tabId];
-      await domainCssByTabItem.setValue(cssMap);
-    }
-    const baseMap = await tabBaseUrlItem.getValue();
-    if (tabId in baseMap) {
-      delete baseMap[tabId];
-      await tabBaseUrlItem.setValue(baseMap);
-    }
+  browser.tabs.onRemoved.addListener((tabId) => {
+    serializeSessionWrite(async () => {
+      const cssMap = await domainCssByTabItem.getValue();
+      if (tabId in cssMap) {
+        delete cssMap[tabId];
+        await domainCssByTabItem.setValue(cssMap);
+      }
+      const baseMap = await tabBaseUrlItem.getValue();
+      if (tabId in baseMap) {
+        delete baseMap[tabId];
+        await tabBaseUrlItem.setValue(baseMap);
+      }
+    }).catch((e) => {
+      console.warn('[cplace] tab cleanup failed:', e);
+    });
   });
 });
